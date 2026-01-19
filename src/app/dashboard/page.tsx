@@ -3,6 +3,7 @@ import { StatCard } from '@/components/StatCard'
 import { CommentCard } from '@/components/CommentCard'
 import { AlertTriangle, MessageSquare, Shield } from 'lucide-react'
 import { redirect } from 'next/navigation'
+import { ConnectFacebookButton } from '@/components/ConnectFacebookButton'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -15,6 +16,11 @@ export default async function DashboardPage() {
     // Fetch stats (mocked for now or simple count)
     const { count: totalComments } = await supabase.from('comments').select('*', { count: 'exact', head: true })
     const { count: toxicComments } = await supabase.from('toxicity_scores').select('*', { count: 'exact', head: true }).gt('score', 0.7)
+
+    // Fetch connected accounts
+    const { data: socialAccounts } = await supabase.from('social_accounts').select('*')
+    const hasConnectedAccounts = socialAccounts && socialAccounts.length > 0
+    const metaAppId = process.env.META_APP_ID as string
 
     // Fetch recent comments
     const { data: comments } = await supabase
@@ -37,7 +43,21 @@ export default async function DashboardPage() {
 
     return (
         <div className="space-y-8">
-            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+            <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+                {!hasConnectedAccounts && metaAppId && (
+                    <ConnectFacebookButton appId={metaAppId} />
+                )}
+                {hasConnectedAccounts && (
+                    <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1 rounded-full text-sm font-medium border border-green-200">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        Monitoring {socialAccounts.length} Page(s)
+                    </div>
+                )}
+            </div>
 
             <div className="grid gap-4 md:grid-cols-3">
                 <StatCard

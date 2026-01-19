@@ -1,0 +1,236 @@
+{
+    "name": "Social Media Comment Classification",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "classify-comment",
+                "options": {},
+                "responseMode": "responseNode"
+            },
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                380,
+                300
+            ],
+            "webhookId": "af38848d-63df-4614-b620-833441a17277"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.body.comment.content }}",
+                            "operation": "isNotEmpty"
+                        }
+                    ]
+                }
+            },
+            "name": "Validate Input",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                600,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://openrouter.ai/api/v1/chat/completions",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.OPENROUTER_API_KEY }}"
+                        },
+                        {
+                            "name": "HTTP-Referer",
+                            "value": "={{ $env.NEXT_PUBLIC_APP_URL }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"model\": \"openai/gpt-3.5-turbo\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a content moderation AI. Analyze the user's comment for toxicity or harmful content.\\n\\nReturn ONLY a JSON object with this format (no markdown code blocks):\\n{\\\"label\\\": \\\"toxic\\\" | \\\"safe\\\", \\\"score\\\": 0.0 to 1.0}\\n\\nScore rules:\\n- 0.0 = completely safe\\n- 1.0 = extremely toxic\\n\\nDetermine the label based on a threshold of 0.7.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.body.comment.content.replace(/\\\"/g, '\\\\\"') }}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n}",
+                "options": {}
+            },
+            "name": "OpenRouter AI",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                820,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "try {\n  const content = $input.item.json.choices[0].message.content;\n  const parsed = JSON.parse(content);\n  \n  return {\n    json: {\n      label: parsed.label,\n      score: parsed.score,\n      model: \"openai/gpt-3.5-turbo\",\n      raw_content: content\n    }\n  };\n} catch (error) {\n  return {\n    json: {\n      error: \"Failed to parse AI response\",\n      details: error.message,\n      label: \"error\",\n      score: 0\n    }\n  };\n}"
+            },
+            "name": "Parse AI Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                1040,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/toxicity_scores",
+                "method": "POST",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "return=minimal"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "comment_id",
+                            "value": "={{ $('Webhook').item.json.body.comment.id }}"
+                        },
+                        {
+                            "name": "label",
+                            "value": "={{ $json.label }}"
+                        },
+                        {
+                            "name": "score",
+                            "value": "={{ $json.score }}"
+                        },
+                        {
+                            "name": "model",
+                            "value": "={{ $json.model }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "Supabase Insert",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                1260,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\n  \"success\": true,\n  \"data\": {\n    \"id\": {{ $json.comment_id }},\n    \"classification\": {\n       \"label\": \"{{ $('Parse AI Response').item.json.label }}\",\n       \"score\": {{ $('Parse AI Response').item.json.score }}\n    }\n  }\n}",
+                "options": {}
+            },
+            "name": "Respond Success",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\n  \"success\": false,\n  \"error\": \"Missing required field: comment.content\"\n}",
+                "options": {
+                    "responseCode": 400
+                }
+            },
+            "name": "Respond Error",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                820,
+                500
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Validate Input",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Validate Input": {
+            "main": [
+                [
+                    {
+                        "node": "OpenRouter AI",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Respond Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenRouter AI": {
+            "main": [
+                [
+                    {
+                        "node": "Parse AI Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse AI Response": {
+            "main": [
+                [
+                    {
+                        "node": "Supabase Insert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Supabase Insert": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
