@@ -5,6 +5,7 @@ import { Navbar } from '@/components/Navbar'
 import { createClient } from '@/lib/supabase/server'
 import { Toaster } from '@/components/ui/sonner'
 import { TubesCursorAnimation } from '@/components/TubesCursorAnimation'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -32,6 +33,7 @@ export default async function RootLayout({
           </main>
           <Toaster />
         </div>
+        <SpeedInsights />
       </body>
     </html>
   )
