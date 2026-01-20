@@ -3,6 +3,55 @@
     "nodes": [
         {
             "parameters": {
+                "httpMethod": "GET",
+                "path": "classify-comment",
+                "options": {},
+                "responseMode": "responseNode"
+            },
+            "name": "Meta Verification",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                100,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "text",
+                "responseBody": "={{ $json.query['hub.challenge'] }}",
+                "options": {}
+            },
+            "name": "Respond Challenge",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                500,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.query['hub.verify_token'] }}",
+                            "operation": "equal",
+                            "value2": "toxiguard-verification-v1"
+                        }
+                    ]
+                }
+            },
+            "name": "Check Token",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                300,
+                100
+            ]
+        },
+        {
+            "parameters": {
                 "httpMethod": "POST",
                 "path": "classify-comment",
                 "options": {},
@@ -260,6 +309,28 @@
         }
     ],
     "connections": {
+        "Meta Verification": {
+            "main": [
+                [
+                    {
+                        "node": "Check Token",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Token": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Challenge",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
         "Webhook": {
             "main": [
                 [

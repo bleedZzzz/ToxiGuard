@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n-local
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      # - N8N_VUE_DEVTOOLS=true # Uncomment for dev
+    volumes:
+      - n8n_data:/home/node/.n8n
+    command: /bin/sh -c "n8n start --tunnel"
+
+volumes:
+  n8n_data:
