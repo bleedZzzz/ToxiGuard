@@ -21,15 +21,24 @@ export function ConnectFacebookButton({ appId }: ConnectFacebookProps) {
     const [loading, setLoading] = useState(false)
 
     useEffect(() => {
+        console.log('ConnectFacebookButton mounted. App ID:', appId);
+        if (!appId) {
+            toast.error('Configuration Error: Missing Facebook App ID');
+            console.error('Missing Facebook App ID');
+            return;
+        }
+
         // Load Facebook SDK
         if (typeof window !== 'undefined') {
             window.fbAsyncInit = function () {
+                console.log('FB.init called');
                 window.FB.init({
                     appId: appId,
                     cookie: true,
                     xfbml: true,
                     version: 'v19.0'
                 });
+                console.log('FB.init finished');
             };
 
             (function (d, s, id) {

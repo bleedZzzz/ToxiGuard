@@ -14,9 +14,10 @@ services:
       - NODE_ENV=production
       - WEBHOOK_URL=http://localhost:5678/
       # - N8N_VUE_DEVTOOLS=true # Uncomment for dev
+    env_file:
+      - .env
     volumes:
       - n8n_data:/home/node/.n8n
-    command: /bin/sh -c "n8n start --tunnel"
 
 volumes:
   n8n_data:
