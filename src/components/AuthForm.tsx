@@ -26,6 +26,9 @@ export function AuthForm() {
                 const { error } = await supabase.auth.signUp({
                     email,
                     password,
+                    options: {
+                        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/callback`,
+                    }
                 })
                 if (error) throw error
                 toast.success('Check your email to confirm your account')
