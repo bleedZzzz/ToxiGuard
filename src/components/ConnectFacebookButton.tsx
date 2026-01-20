@@ -62,20 +62,35 @@ export function ConnectFacebookButton({ appId }: ConnectFacebookProps) {
         setLoading(true)
 
         // Request permissions for Pages
-        window.FB.login(async function (response: any) {
+        console.log('Opening FB Login popup...');
+        window.FB.login(function (response: any) {
+            console.log('FB.login callback received:', response);
             if (response.authResponse) {
-                toast.info('Authenticating with backend...')
-                const res = await connectFacebook(response.authResponse.accessToken)
+                console.log('User logged in. Authenticating with server...');
+                toast.info('Authenticating with backend...');
 
-                if (res.success) {
-                    toast.success(`Connected ${res.count} Facebook Page(s)!`)
-                } else {
-                    toast.error(res.error || 'Failed to connect accounts.')
-                }
+                // Handle async action
+                (async () => {
+                    try {
+                        const res = await connectFacebook(response.authResponse.accessToken)
+                        if (res.success) {
+                            toast.success(`Connected ${res.count} Facebook Page(s)!`)
+                        } else {
+                            toast.error(res.error || 'Failed to connect accounts.')
+                        }
+                    } catch (err) {
+                        console.error('Action failed:', err);
+                        toast.error('An unexpected error occurred');
+                    } finally {
+                        setLoading(false)
+                    }
+                })();
+
             } else {
+                console.warn('User cancelled login or didn\'t authorize.');
                 toast.error('User cancelled login or did not fully authorize.')
+                setLoading(false)
             }
-            setLoading(false)
         }, { scope: 'public_profile,pages_show_list,pages_read_engagement,pages_manage_metadata' })
     }
 
