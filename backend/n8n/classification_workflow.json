@@ -1,5 +1,5 @@
 {
-    "name": "Social Media Comment Classification",
+    "name": "Social Media Comment Classification v2",
     "nodes": [
         {
             "parameters": {
@@ -12,7 +12,7 @@
             "type": "n8n-nodes-base.webhook",
             "typeVersion": 1,
             "position": [
-                380,
+                100,
                 300
             ],
             "webhookId": "af38848d-63df-4614-b620-833441a17277"
@@ -24,6 +24,14 @@
                         {
                             "value1": "={{ $json.body.comment.content }}",
                             "operation": "isNotEmpty"
+                        },
+                        {
+                            "value1": "={{ $json.body.comment.id }}",
+                            "operation": "isNotEmpty"
+                        },
+                        {
+                            "value1": "={{ $json.body.comment.user_id }}",
+                            "operation": "isNotEmpty"
                         }
                     ]
                 }
@@ -32,8 +40,24 @@
             "type": "n8n-nodes-base.if",
             "typeVersion": 1,
             "position": [
-                600,
+                300,
                 300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\n  \"success\": false,\n  \"error\": \"Missing required fields: comment.content, comment.id, or comment.user_id\"\n}",
+                "options": {
+                    "responseCode": 400
+                }
+            },
+            "name": "Respond Error",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                300,
+                500
             ]
         },
         {
@@ -57,27 +81,115 @@
                 },
                 "sendBody": true,
                 "specifyBody": "json",
-                "jsonBody": "={\n  \"model\": \"openai/gpt-3.5-turbo\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a content moderation AI. Analyze the user's comment for toxicity or harmful content.\\n\\nReturn ONLY a JSON object with this format (no markdown code blocks):\\n{\\\"label\\\": \\\"toxic\\\" | \\\"safe\\\", \\\"score\\\": 0.0 to 1.0}\\n\\nScore rules:\\n- 0.0 = completely safe\\n- 1.0 = extremely toxic\\n\\nDetermine the label based on a threshold of 0.7.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.body.comment.content.replace(/\\\"/g, '\\\\\"') }}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n}",
-                "options": {}
+                "jsonBody": "={\n  \"model\": \"openai/gpt-3.5-turbo\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a content moderation AI. Return ONLY a JSON object: { 'label': 'safe' | 'hate_speech' | 'harassment' | 'sexual' | 'violence' | 'spam', 'score': 0.0-1.0 }. Score 0.0 is safe, 1.0 is severe.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $('Webhook').item.json.body.comment.content.replace(/\\\"/g, '\\\\\"') }}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n}",
+                "options": {
+                    "timeout": 30000
+                }
             },
             "name": "OpenRouter AI",
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 3,
             "position": [
-                820,
+                520,
+                300
+            ],
+            "retryOnFail": true,
+            "maxTries": 3,
+            "waitBetweenTries": 1000
+        },
+        {
+            "parameters": {
+                "jsCode": "try {\n  const content = $input.item.json.choices[0].message.content;\n  const parsed = JSON.parse(content);\n  \n  return {\n    json: {\n      label: parsed.label,\n      score: parsed.score,\n      model: \"openai/gpt-3.5-turbo\"\n    }\n  };\n} catch (error) {\n  return {\n    json: {\n      label: \"error\",\n      score: 0,\n      error: error.message\n    }\n  };\n}"
+            },
+            "name": "Parse Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                740,
                 300
             ]
         },
         {
             "parameters": {
-                "jsCode": "try {\n  const content = $input.item.json.choices[0].message.content;\n  const parsed = JSON.parse(content);\n  \n  return {\n    json: {\n      label: parsed.label,\n      score: parsed.score,\n      model: \"openai/gpt-3.5-turbo\",\n      raw_content: content\n    }\n  };\n} catch (error) {\n  return {\n    json: {\n      error: \"Failed to parse AI response\",\n      details: error.message,\n      label: \"error\",\n      score: 0\n    }\n  };\n}"
+                "conditions": {
+                    "number": [
+                        {
+                            "value1": "={{ $json.score }}",
+                            "operation": "largerEqual",
+                            "value2": 0.6
+                        },
+                        {
+                            "value1": "={{ $json.score }}",
+                            "operation": "smallerEqual",
+                            "value2": 0.9
+                        }
+                    ]
+                }
             },
-            "name": "Parse AI Response",
-            "type": "n8n-nodes-base.code",
+            "name": "Smart Routing",
+            "type": "n8n-nodes-base.if",
             "typeVersion": 1,
             "position": [
-                1040,
+                960,
                 300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/reports",
+                "method": "POST",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "return=minimal"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "comment_id",
+                            "value": "={{ $('Webhook').item.json.body.comment.id }}"
+                        },
+                        {
+                            "name": "user_id",
+                            "value": "={{ $('Webhook').item.json.body.comment.user_id }}"
+                        },
+                        {
+                            "name": "reason",
+                            "value": "=AI Flagged: {{ $('Parse Response').item.json.label }}"
+                        },
+                        {
+                            "name": "status",
+                            "value": "pending"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "Create Report",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                1200,
+                150
             ]
         },
         {
@@ -116,56 +228,40 @@
                         },
                         {
                             "name": "label",
-                            "value": "={{ $json.label }}"
+                            "value": "={{ $('Parse Response').item.json.label }}"
                         },
                         {
                             "name": "score",
-                            "value": "={{ $json.score }}"
+                            "value": "={{ $('Parse Response').item.json.score }}"
                         },
                         {
                             "name": "model",
-                            "value": "={{ $json.model }}"
+                            "value": "={{ $('Parse Response').item.json.model }}"
                         }
                     ]
                 },
                 "options": {}
             },
-            "name": "Supabase Insert",
+            "name": "Log Score",
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 3,
             "position": [
-                1260,
+                1450,
                 300
             ]
         },
         {
             "parameters": {
                 "respondWith": "json",
-                "responseBody": "={\n  \"success\": true,\n  \"data\": {\n    \"id\": {{ $json.comment_id }},\n    \"classification\": {\n       \"label\": \"{{ $('Parse AI Response').item.json.label }}\",\n       \"score\": {{ $('Parse AI Response').item.json.score }}\n    }\n  }\n}",
+                "responseBody": "={\n  \"success\": true,\n  \"classification\": {\n     \"label\": \"{{ $('Parse Response').item.json.label }}\",\n     \"score\": {{ $('Parse Response').item.json.score }}\n  },\n  \"flagged_for_review\": {{ $('Smart Routing').item.json ? 'true' : 'false' }}\n}",
                 "options": {}
             },
             "name": "Respond Success",
             "type": "n8n-nodes-base.respondToWebhook",
             "typeVersion": 1,
             "position": [
-                1480,
+                1650,
                 300
-            ]
-        },
-        {
-            "parameters": {
-                "respondWith": "json",
-                "responseBody": "={\n  \"success\": false,\n  \"error\": \"Missing required field: comment.content\"\n}",
-                "options": {
-                    "responseCode": 400
-                }
-            },
-            "name": "Respond Error",
-            "type": "n8n-nodes-base.respondToWebhook",
-            "typeVersion": 1,
-            "position": [
-                820,
-                500
             ]
         }
     ],
@@ -203,25 +299,54 @@
             "main": [
                 [
                     {
-                        "node": "Parse AI Response",
+                        "node": "Parse Response",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Parse AI Response": {
+        "Parse Response": {
             "main": [
                 [
                     {
-                        "node": "Supabase Insert",
+                        "node": "Smart Routing",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Supabase Insert": {
+        "Smart Routing": {
+            "main": [
+                [
+                    {
+                        "node": "Create Report",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Log Score",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Report": {
+            "main": [
+                [
+                    {
+                        "node": "Log Score",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Log Score": {
             "main": [
                 [
                     {
