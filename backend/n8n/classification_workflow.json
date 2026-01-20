@@ -64,8 +64,6 @@
             "parameters": {
                 "method": "POST",
                 "url": "https://openrouter.ai/api/v1/chat/completions",
-                "authentication": "genericCredentialType",
-                "genericAuthType": "httpHeaderAuth",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
@@ -138,8 +136,6 @@
             "parameters": {
                 "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/reports",
                 "method": "POST",
-                "authentication": "genericCredentialType",
-                "genericAuthType": "httpHeaderAuth",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
@@ -196,8 +192,6 @@
             "parameters": {
                 "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/toxicity_scores",
                 "method": "POST",
-                "authentication": "genericCredentialType",
-                "genericAuthType": "httpHeaderAuth",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
