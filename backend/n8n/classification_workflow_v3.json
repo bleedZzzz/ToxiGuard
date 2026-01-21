@@ -1,0 +1,634 @@
+{
+    "name": "Social Media Comment Classification v2",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "GET",
+                "path": "classify-comment",
+                "options": {},
+                "responseMode": "responseNode"
+            },
+            "name": "Meta Verification",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                100,
+                100
+            ],
+            "webhookId": "11111111-1111-1111-1111-111111111111"
+        },
+        {
+            "parameters": {
+                "respondWith": "text",
+                "responseBody": "={{ $json.query['hub.challenge'] }}",
+                "options": {}
+            },
+            "name": "Respond Challenge",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                500,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.query['hub.verify_token'] }}",
+                            "operation": "equal",
+                            "value2": "toxiguard-verification-v1"
+                        }
+                    ]
+                }
+            },
+            "name": "Check Token",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                300,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "classify-comment",
+                "options": {},
+                "responseMode": "responseNode"
+            },
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                100,
+                300
+            ],
+            "webhookId": "af38848d-63df-4614-b620-833441a17277"
+        },
+        {
+            "parameters": {
+                "jsCode": "const body = $input.item.json.body;\n\n// Check if it's a verify challenge (already handled) or a feed event\nif (body.object === 'page' && body.entry && body.entry[0].changes && body.entry[0].changes[0].value.item === 'comment') {\n  const commentData = body.entry[0].changes[0].value;\n  return {\n    json: {\n      body: {\n        comment: {\n          content: commentData.message,\n          id: commentData.comment_id,\n          user_id: commentData.from.id\n        },\n        page_id: body.entry[0].id,\n        post_id: commentData.post_id,\n        commenter_name: commentData.from.name\n      }\n    }\n  };\n}\n\n// Pass through if structure is different (or test simulation)\nreturn {\n  json: $input.item.json\n};"
+            },
+            "name": "Extract Payload",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                300,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.body.comment.content }}",
+                            "operation": "isNotEmpty"
+                        },
+                        {
+                            "value1": "={{ $json.body.comment.id }}",
+                            "operation": "isNotEmpty"
+                        },
+                        {
+                            "value1": "={{ $json.body.comment.user_id }}",
+                            "operation": "isNotEmpty"
+                        }
+                    ]
+                }
+            },
+            "name": "Validate Input",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                300,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\n  \"success\": false,\n  \"error\": \"Missing required fields: comment.content, comment.id, or comment.user_id\"\n}",
+                "options": {
+                    "responseCode": 400
+                }
+            },
+            "name": "Respond Error",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1100,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://openrouter.ai/api/v1/chat/completions",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.OPENROUTER_API_KEY }}"
+                        },
+                        {
+                            "name": "HTTP-Referer",
+                            "value": "={{ $env.NEXT_PUBLIC_APP_URL }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"model\": \"openai/gpt-3.5-turbo\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a content moderation AI. Return ONLY a JSON object: { 'label': 'safe' | 'hate_speech' | 'harassment' | 'sexual' | 'violence' | 'spam', 'score': 0.0-1.0 }. Score 0.0 is safe, 1.0 is severe.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $('Webhook').item.json.body.comment.content.replace(/\\\"/g, '\\\\\"') }}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n}",
+                "options": {
+                    "timeout": 30000
+                }
+            },
+            "name": "OpenRouter AI",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                1320,
+                300
+            ],
+            "retryOnFail": true,
+            "maxTries": 3,
+            "waitBetweenTries": 1000
+        },
+        {
+            "parameters": {
+                "jsCode": "try {\n  const content = $input.item.json.choices[0].message.content;\n  const parsed = JSON.parse(content);\n  \n  return {\n    json: {\n      label: parsed.label,\n      score: parsed.score,\n      model: \"openai/gpt-3.5-turbo\"\n    }\n  };\n} catch (error) {\n  return {\n    json: {\n      label: \"error\",\n      score: 0,\n      error: error.message\n    }\n  };\n}"
+            },
+            "name": "Parse Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                1540,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "number": [
+                        {
+                            "value1": "={{ $json.score }}",
+                            "operation": "largerEqual",
+                            "value2": 0.6
+                        },
+                        {
+                            "value1": "={{ $json.score }}",
+                            "operation": "smallerEqual",
+                            "value2": 0.9
+                        }
+                    ]
+                }
+            },
+            "name": "Smart Routing",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1760,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/reports",
+                "method": "POST",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "return=minimal"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "comment_id",
+                            "value": "={{ $('Webhook').item.json.body.comment.id }}"
+                        },
+                        {
+                            "name": "user_id",
+                            "value": "={{ $('Webhook').item.json.body.comment.user_id }}"
+                        },
+                        {
+                            "name": "reason",
+                            "value": "=AI Flagged: {{ $('Parse Response').item.json.label }}"
+                        },
+                        {
+                            "name": "status",
+                            "value": "pending"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "Create Report",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                2000,
+                150
+            ]
+        },
+        {
+            "parameters": {
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/toxicity_scores",
+                "method": "POST",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "return=minimal"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "comment_id",
+                            "value": "={{ $('Webhook').item.json.body.comment.id }}"
+                        },
+                        {
+                            "name": "label",
+                            "value": "={{ $('Parse Response').item.json.label }}"
+                        },
+                        {
+                            "name": "score",
+                            "value": "={{ $('Parse Response').item.json.score }}"
+                        },
+                        {
+                            "name": "model",
+                            "value": "={{ $('Parse Response').item.json.model }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "Log Score",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                2250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\n  \"success\": true,\n  \"classification\": {\n     \"label\": \"{{ $('Parse Response').item.json.label }}\",\n     \"score\": {{ $('Parse Response').item.json.score }}\n  },\n  \"flagged_for_review\": {{ $('Smart Routing').item.json ? 'true' : 'false' }}\n}",
+                "options": {}
+            },
+            "name": "Respond Success",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                2450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/social_accounts",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        }
+                    ]
+                },
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "page_id",
+                            "value": "eq.{{ $('Extract Payload').item.json.body.page_id }}"
+                        },
+                        {
+                            "name": "select",
+                            "value": "user_id"
+                        }
+                    ]
+                }
+            },
+            "name": "Get Page Owner",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                500,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/posts",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "resolution=merge-duplicates"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "value": "={{ $('Extract Payload').item.json.body.post_id }}"
+                        },
+                        {
+                            "name": "user_id",
+                            "value": "={{ $('Get Page Owner').item.json[0].user_id }}"
+                        },
+                        {
+                            "name": "content",
+                            "value": "Post content placeholder"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "Upsert Post",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                700,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/comments",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "resolution=merge-duplicates"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "value": "={{ $('Extract Payload').item.json.body.comment.id }}"
+                        },
+                        {
+                            "name": "post_id",
+                            "value": "={{ $('Extract Payload').item.json.body.post_id }}"
+                        },
+                        {
+                            "name": "user_id",
+                            "value": "={{ $('Get Page Owner').item.json[0].user_id }}"
+                        },
+                        {
+                            "name": "content",
+                            "value": "={{ $('Extract Payload').item.json.body.comment.content }}"
+                        },
+                        {
+                            "name": "commenter_name",
+                            "value": "={{ $('Extract Payload').item.json.body.commenter_name }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "Upsert Comment",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                900,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Meta Verification": {
+            "main": [
+                [
+                    {
+                        "node": "Check Token",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Token": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Challenge",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Payload": {
+            "main": [
+                [
+                    {
+                        "node": "Validate Input",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Validate Input": {
+            "main": [
+                [
+                    {
+                        "node": "Get Page Owner",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Respond Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenRouter AI": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Response": {
+            "main": [
+                [
+                    {
+                        "node": "Smart Routing",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Smart Routing": {
+            "main": [
+                [
+                    {
+                        "node": "Create Report",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Log Score",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Report": {
+            "main": [
+                [
+                    {
+                        "node": "Log Score",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Log Score": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Page Owner": {
+            "main": [
+                [
+                    {
+                        "node": "Upsert Post",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upsert Post": {
+            "main": [
+                [
+                    {
+                        "node": "Upsert Comment",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upsert Comment": {
+            "main": [
+                [
+                    {
+                        "node": "OpenRouter AI",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
