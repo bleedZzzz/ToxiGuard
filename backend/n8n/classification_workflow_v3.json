@@ -308,8 +308,8 @@
         },
         {
             "parameters": {
-                "respondWith": "json",
-                "responseBody": "={\n  \"user\": {{ $('Get Page Owner').item.json }},\n  \"post_result\": {{ $('Upsert Post').item.json }},\n  \"comment_result\": {{ $('Upsert Comment').item.json }},\n  \"classification\": {{ $('Parse Response').item.json }}\n}",
+                "respondWith": "text",
+                "responseBody": "DEBUG_CHECK_WORKS",
                 "options": {}
             },
             "name": "Respond Success",

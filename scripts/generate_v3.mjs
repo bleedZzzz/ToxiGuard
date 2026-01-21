@@ -115,7 +115,8 @@ const upsertCommentNode = createSupabaseNode("Upsert Comment", "POST", "comments
 
 // 5. Update Respond Success to return Debug Info
 const respondNode = workflow.nodes.find(n => n.name === 'Respond Success');
-respondNode.parameters.responseBody = "={\n  \"user\": {{ $('Get Page Owner').item.json }},\n  \"post_result\": {{ $('Upsert Post').item.json }},\n  \"comment_result\": {{ $('Upsert Comment').item.json }},\n  \"classification\": {{ $('Parse Response').item.json }}\n}";
+respondNode.parameters.respondWith = "text";
+respondNode.parameters.responseBody = "DEBUG_CHECK_WORKS";
 
 // REWIRE NODES (SHIFT RIGHT)
 const shiftX = 800;

@@ -3,7 +3,7 @@ import fetch from 'node-fetch';
 
 async function simulateWebhook() {
     // We can hit the Tunnel URL to test the FULL path (Tunnel -> n8n)
-    const url = 'https://thorough-suspended-mobility-turbo.trycloudflare.com/webhook/classify-comment';
+    const url = 'http://localhost:5678/webhook/classify-comment';
 
     // Payload mimicking a real Facebook Feed Comment Event
     const payload = {
