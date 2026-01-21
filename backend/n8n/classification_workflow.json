@@ -301,8 +301,8 @@
         },
         {
             "parameters": {
-                "respondWith": "json",
-                "responseBody": "{\n  \"success\": true,\n  \"msg\": \"Success node reached\"\n}",
+                "respondWith": "text",
+                "responseBody": "OK",
                 "options": {}
             },
             "name": "Respond Success",

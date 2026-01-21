@@ -37,14 +37,25 @@ async function testAI() {
                 })
             });
 
+            console.log(`📊 Status: ${res.status} ${res.statusText}`);
+
             if (!res.ok) {
-                console.error(`❌ Error ${res.status}: ${await res.text()}`);
+                console.error(`❌ Error Body: ${await res.text()}`);
                 continue;
             }
 
-            const data = await res.json() as any;
-            console.log(`✅ Result: ${data.classification.label} (Score: ${data.classification.score})`);
-            console.log(`   Flagged: ${data.flagged_for_review}\n`);
+            const text = await res.text();
+            if (!text) {
+                console.warn(`⚠️ Warning: Received empty response body.`);
+                continue;
+            }
+            try {
+                const data = JSON.parse(text) as any;
+                console.log(`✅ Result: ${data.classification?.label || 'no-label'} (Score: ${data.classification?.score || 0})`);
+                console.log(`   Flagged: ${data.flagged_for_review}\n`);
+            } catch (pErr) {
+                console.error(`❌ JSON Parse Error: ${text}`);
+            }
 
         } catch (err: any) {
             console.error(`❌ Connection Error: ${err.message}. Is n8n running?`);
