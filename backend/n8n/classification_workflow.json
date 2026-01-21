@@ -127,11 +127,11 @@
                     "parameters": [
                         {
                             "name": "Authorization",
-                            "value": "=Bearer {{ $env.OPENROUTER_API_KEY }}"
+                            "value": "Bearer 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"
                         },
                         {
                             "name": "HTTP-Referer",
-                            "value": "={{ $env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}"
+                            "value": "http://localhost:3000"
                         }
                     ]
                 },
