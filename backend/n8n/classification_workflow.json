@@ -127,7 +127,7 @@
                     "parameters": [
                         {
                             "name": "Authorization",
-                            "value": "Bearer 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"
+                            "value": "Bearer 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"
                         },
                         {
                             "name": "HTTP-Referer",
