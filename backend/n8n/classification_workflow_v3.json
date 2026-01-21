@@ -635,7 +635,7 @@
             "main": [
                 [
                     {
-                        "node": "OpenRouter AI",
+                        "node": "Respond Success",
                         "type": "main",
                         "index": 0
                     }

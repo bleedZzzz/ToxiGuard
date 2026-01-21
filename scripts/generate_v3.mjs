@@ -136,8 +136,8 @@ workflow.connections["Get Page Owner"] = { "main": [[{ "node": "Upsert Post", "t
 // Upsert Post -> Upsert Comment
 workflow.connections["Upsert Post"] = { "main": [[{ "node": "Upsert Comment", "type": "main", "index": 0 }]] };
 
-// Upsert Comment -> OpenRouter AI
-workflow.connections["Upsert Comment"] = { "main": [[{ "node": "OpenRouter AI", "type": "main", "index": 0 }]] };
+// Upsert Comment -> Respond Success (Short Circuit for Debugging)
+workflow.connections["Upsert Comment"] = { "main": [[{ "node": "Respond Success", "type": "main", "index": 0 }]] };
 
 
 // Save v3
