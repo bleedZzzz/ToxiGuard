@@ -516,7 +516,7 @@
             "main": [
                 [
                     {
-                        "node": "Validate Input",
+                        "node": "Respond Success",
                         "type": "main",
                         "index": 0
                     }
