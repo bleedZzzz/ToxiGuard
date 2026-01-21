@@ -120,11 +120,31 @@
         },
         {
             "parameters": {
-                "jsCode": "const inputData = $input.item.json;\nconst content = (inputData.content || inputData.body?.comment?.content || '').toLowerCase();\nlet label = 'safe';\nlet score = 0.1;\n\nif (content.includes('idiot') || content.includes('hate') || content.includes('die')) {\n    label = 'hate_speech';\n    score = 0.95;\n} else if (content.includes('spam') || content.includes('fake')) {\n    label = 'spam';\n    score = 0.8;\n} else if (content.includes('agree')) {\n    label = 'safe';\n    score = 0.05;\n}\n\nreturn {\n  json: {\n    choices: [\n      {\n        message: {\n          content: JSON.stringify({\n            label: label,\n            score: score,\n            debug_input_keys: Object.keys(inputData),\n            debug_content_found: content,\n            debug_error: inputData.error,\n            debug_message: inputData.message\n          })\n        }\n      }\n    ]\n  }\n};"
+                "method": "POST",
+                "url": "https://openrouter.ai/api/v1/chat/completions",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer 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"
+                        },
+                        {
+                            "name": "HTTP-Referer",
+                            "value": "http://localhost:3000"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"model\": \"liquid/lfm-40b\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a strict content moderation AI. Your goal is to detect toxicity in social media comments. \\n\\nGuidelines for scoring:\\n- 0.0 to 0.2: Purely safe, helpful, or neutral.\\n- 0.3 to 0.5: Sarcastic, mildly annoying, or potentially spam but not abusive.\\n- 0.6 to 0.8: Offensive, insulting, or aggressive.\\n- 0.9 to 1.0: Severe hate speech, threats, or explicit harassment.\\n\\nConsider emojis and slang. If a comment contains clear insults, it MUST be above 0.7. \\n\\nReturn ONLY a JSON object: { 'label': 'safe' | 'hate_speech' | 'harassment' | 'sexual' | 'violence' | 'spam', 'score': 0.0-1.0 }. JSON only.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": {{ JSON.stringify($('Extract Payload').item.json.body.comment.content) }}\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" },\n  \"options\": {\n     \"timeout\": 30000\n  }\n}",
+                "options": {
+                    "timeout": 30000
+                }
             },
             "name": "OpenRouter AI",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
             "position": [
                 1320,
                 300
