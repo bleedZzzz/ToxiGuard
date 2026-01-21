@@ -340,17 +340,17 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/posts",
+                "url": "https://oprngegqyioznvwavkku.supabase.co/rest/v1/posts",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
                         {
                             "name": "apikey",
-                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcm5nZWdxeWlvem52d2F2a2t1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDY4NTU1OCwiZXhwIjoyMDgwMjYxNTU4fQ.6_Ur49jzOsAkXwLyq_pfgbLTDNftjr76lIZVsJ630WE"
                         },
                         {
                             "name": "Authorization",
-                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcm5nZWdxeWlvem52d2F2a2t1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDY4NTU1OCwiZXhwIjoyMDgwMjYxNTU4fQ.6_Ur49jzOsAkXwLyq_pfgbLTDNftjr76lIZVsJ630WE"
                         },
                         {
                             "name": "Content-Type",
@@ -397,17 +397,17 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/comments",
+                "url": "https://oprngegqyioznvwavkku.supabase.co/rest/v1/comments",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
                         {
                             "name": "apikey",
-                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcm5nZWdxeWlvem52d2F2a2t1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDY4NTU1OCwiZXhwIjoyMDgwMjYxNTU4fQ.6_Ur49jzOsAkXwLyq_pfgbLTDNftjr76lIZVsJ630WE"
                         },
                         {
                             "name": "Authorization",
-                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcm5nZWdxeWlvem52d2F2a2t1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDY4NTU1OCwiZXhwIjoyMDgwMjYxNTU4fQ.6_Ur49jzOsAkXwLyq_pfgbLTDNftjr76lIZVsJ630WE"
                         },
                         {
                             "name": "Content-Type",
