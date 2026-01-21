@@ -98,7 +98,7 @@ const getOwnerNode = {
 // Note: using .user_id directly now
 const upsertPostNode = createSupabaseNode("Upsert Post", "POST", "posts", [
     { "name": "id", "value": "={{ $('Extract Payload').item.json.body.post_id }}" },
-    { "name": "user_id", "value": "={{ $('Get Page Owner').item.json.user_id }}" },
+    { "name": "user_id", "value": "da554f2f-6c3f-49b7-83b5-b2aa1763464b" },
     { "name": "content", "value": "Post content placeholder" }
 ], [700, 300]);
 
@@ -106,7 +106,7 @@ const upsertPostNode = createSupabaseNode("Upsert Post", "POST", "posts", [
 const upsertCommentNode = createSupabaseNode("Upsert Comment", "POST", "comments", [
     { "name": "id", "value": "={{ $('Extract Payload').item.json.body.comment.id }}" },
     { "name": "post_id", "value": "={{ $('Extract Payload').item.json.body.post_id }}" },
-    { "name": "user_id", "value": "={{ $('Get Page Owner').item.json.user_id }}" },
+    { "name": "user_id", "value": "da554f2f-6c3f-49b7-83b5-b2aa1763464b" },
     { "name": "content", "value": "={{ $('Extract Payload').item.json.body.comment.content }}" },
     { "name": "commenter_name", "value": "={{ $('Extract Payload').item.json.body.commenter_name }}" }
 ], [900, 300]);

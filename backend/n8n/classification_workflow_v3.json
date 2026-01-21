@@ -401,7 +401,7 @@
                         },
                         {
                             "name": "user_id",
-                            "value": "={{ $('Get Page Owner').item.json.user_id }}"
+                            "value": "da554f2f-6c3f-49b7-83b5-b2aa1763464b"
                         },
                         {
                             "name": "content",
@@ -461,7 +461,7 @@
                         },
                         {
                             "name": "user_id",
-                            "value": "={{ $('Get Page Owner').item.json.user_id }}"
+                            "value": "da554f2f-6c3f-49b7-83b5-b2aa1763464b"
                         },
                         {
                             "name": "content",
