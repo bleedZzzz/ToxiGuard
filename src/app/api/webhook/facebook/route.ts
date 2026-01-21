@@ -139,8 +139,17 @@ async function classifyComment(commentId: string, text: string, userId: string) 
             model: 'openai/gpt-3.5-turbo'
         });
 
-        // 6. Create Report if toxic
-        if (content.score >= 0.7) {
+        // 6. Fetch threshold from profile
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('threshold')
+            .eq('id', userId)
+            .single();
+
+        const threshold = profile?.threshold ?? 0.7;
+
+        // 7. Create Report if toxic based on custom threshold
+        if (content.score >= threshold) {
             await supabase.from('reports').insert({
                 comment_id: commentId,
                 user_id: userId,

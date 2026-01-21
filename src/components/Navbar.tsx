@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { ShieldCheck } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -29,7 +30,10 @@ export function Navbar({ user }: { user: User | null }) {
             <div className="container flex h-14 items-center">
                 <div className="mr-4 hidden md:flex">
                     <Link href="/" className="mr-6 flex items-center space-x-2">
-                        <span className="hidden font-bold sm:inline-block text-xl">
+                        <div className="p-1.5 bg-primary/10 rounded-lg">
+                            <ShieldCheck className="h-6 w-6 text-primary" />
+                        </div>
+                        <span className="hidden font-bold sm:inline-block text-xl tracking-tight">
                             ToxiGuard
                         </span>
                     </Link>

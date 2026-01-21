@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
+import { ThresholdSlider } from '@/components/ThresholdSlider'
 
 export default async function SettingsPage() {
     const supabase = await createClient()
@@ -14,55 +14,65 @@ export default async function SettingsPage() {
         redirect('/login')
     }
 
+    // Fetch user profile for threshold
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('threshold')
+        .eq('id', user.id)
+        .single()
+
     return (
-        <div className="space-y-6">
+        <div className="max-w-4xl mx-auto space-y-8 py-4">
             <div>
-                <h3 className="text-lg font-medium">Settings</h3>
-                <p className="text-sm text-muted-foreground">
-                    Manage your account settings and preferences.
+                <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+                <p className="text-muted-foreground mt-1">
+                    Manage your preferences and security.
                 </p>
             </div>
-            <Separator />
-            <div className="grid gap-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Profile</CardTitle>
+
+            <div className="grid gap-8">
+                <Card className="overflow-hidden">
+                    <CardHeader className="bg-muted/30">
+                        <CardTitle>Account Security</CardTitle>
                         <CardDescription>
-                            Your personal information.
+                            Your logged-in session details.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-1">
-                            <Label>Email</Label>
-                            <Input value={user.email} disabled />
+                    <CardContent className="pt-6">
+                        <div className="space-y-4 max-w-md">
+                            <div className="space-y-1">
+                                <Label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Email Address</Label>
+                                <Input value={user.email} disabled className="bg-muted/50 font-mono text-sm" />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Toxicity Threshold</CardTitle>
+                <Card className="overflow-hidden border-primary/20 bg-primary/[0.02]">
+                    <CardHeader className="bg-primary/5 border-b border-primary/10">
+                        <CardTitle className="text-primary flex items-center gap-2">
+                            AI Toxicity Detection
+                        </CardTitle>
                         <CardDescription>
-                            Adjust the sensitivity of the toxicity detection.
+                            Adjust how strictly ToxiGuard flags comments. Higher values will only flag obvious toxicity.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center space-x-4">
-                            {/* ThresholdSlider component would go here */}
-                            <p className="text-sm text-muted-foreground">Default: 70%</p>
-                        </div>
+                    <CardContent className="pt-8 flex justify-center pb-10">
+                        <ThresholdSlider initialValue={profile?.threshold ?? 0.7} />
                     </CardContent>
                 </Card>
 
-                <Card className="border-destructive/50">
+                <Card className="border-destructive/30 bg-destructive/[0.02]">
                     <CardHeader>
-                        <CardTitle className="text-destructive">Danger Zone</CardTitle>
+                        <CardTitle className="text-destructive font-bold">Danger Zone</CardTitle>
                         <CardDescription>
-                            Irreversible actions.
+                            Deleting your account is permanent and cannot be undone.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Button variant="destructive">Delete Account & Data</Button>
+                        <Button variant="destructive" size="lg" className="w-full sm:w-auto">
+                            Delete Account & All Data
+                        </Button>
                     </CardContent>
                 </Card>
             </div>
