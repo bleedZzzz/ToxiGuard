@@ -51,11 +51,7 @@ async function testAI() {
             }
             try {
                 const data = JSON.parse(text) as any;
-                console.log(`✅ Result: ${data.classification?.label || 'no-label'} (Score: ${data.classification?.score || 0})`);
-                if (data.classification?.error) {
-                    console.log(`   ❌ Error: ${data.classification.error}`);
-                    console.log(`   📝 Raw: ${JSON.stringify(data.classification.raw, null, 2)}`);
-                }
+                console.log(`✅ Result:`, data.classification);
                 console.log(`   Flagged: ${data.flagged_for_review}\n`);
             } catch (pErr) {
                 console.error(`❌ JSON Parse Error: ${text}`);
