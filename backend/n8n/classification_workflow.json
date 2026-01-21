@@ -302,7 +302,8 @@
         },
         {
             "parameters": {
-                "respondWith": "allIncomingItems",
+                "respondWith": "json",
+                "responseBody": "={{ { \"success\": true, \"classification\": $('Parse Response').item.json } }}",
                 "options": {}
             },
             "name": "Respond Success",
