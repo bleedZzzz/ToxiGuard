@@ -1,5 +1,5 @@
 {
-    "name": "Social Media Comment Classification v2",
+    "name": "ToxiGuard Comment Classification v3",
     "nodes": [
         {
             "parameters": {
@@ -69,7 +69,7 @@
         },
         {
             "parameters": {
-                "jsCode": "const body = $input.item.json.body;\n\n// Check if it's a verify challenge (already handled) or a feed event\nif (body.object === 'page' && body.entry && body.entry[0].changes && body.entry[0].changes[0].value.item === 'comment') {\n  const commentData = body.entry[0].changes[0].value;\n  return {\n    json: {\n      body: {\n        comment: {\n          content: commentData.message,\n          id: commentData.comment_id,\n          user_id: commentData.from.id\n        }\n      }\n    }\n  };\n}\n\n// Pass through if structure is different (or test simulation)\nreturn {\n  json: $input.item.json\n};"
+                "jsCode": "const body = $input.item.json.body;\n\n// Facebook Feed Event\nif (body.object === 'page' && body.entry && body.entry[0].changes && body.entry[0].changes[0].value.item === 'comment') {\n  const commentData = body.entry[0].changes[0].value;\n  return {\n    json: {\n      body: {\n        comment: {\n          content: commentData.message,\n          id: commentData.comment_id,\n          user_id: commentData.from.id\n        },\n        page_id: body.entry[0].id,\n        post_id: commentData.post_id,\n        commenter_name: commentData.from.name\n      }\n    }\n  };\n}\n\n// Instagram Event\nif (body.object === 'instagram' && body.entry && body.entry[0].changes) {\n    const change = body.entry[0].changes[0].value;\n    if (change.text && change.id) {\n        return {\n            json: {\n                body: {\n                    comment: {\n                        content: change.text,\n                        id: change.id,\n                        user_id: change.from?.id || 'unknown'\n                    },\n                    page_id: body.entry[0].id,\n                    post_id: change.media?.id || 'unknown',\n                    commenter_name: change.from?.username || 'Anonymous'\n                }\n            }\n        };\n    }\n}\n\n// Pass through if structure is different (or test simulation)\nreturn {\n  json: $input.item.json\n};"
             },
             "name": "Extract Payload",
             "type": "n8n-nodes-base.code",
@@ -90,10 +90,6 @@
                         {
                             "value1": "={{ $json.body.comment.id }}",
                             "operation": "isNotEmpty"
-                        },
-                        {
-                            "value1": "={{ $json.body.comment.user_id }}",
-                            "operation": "isNotEmpty"
                         }
                     ]
                 }
@@ -109,7 +105,7 @@
         {
             "parameters": {
                 "respondWith": "json",
-                "responseBody": "={\n  \"success\": false,\n  \"error\": \"Missing required fields: comment.content, comment.id, or comment.user_id\"\n}",
+                "responseBody": "={\n  \"success\": false,\n  \"error\": \"Missing required fields: comment.content or comment.id\"\n}",
                 "options": {
                     "responseCode": 400
                 }
@@ -118,7 +114,7 @@
             "type": "n8n-nodes-base.respondToWebhook",
             "typeVersion": 1,
             "position": [
-                300,
+                1100,
                 500
             ]
         },
@@ -135,13 +131,13 @@
                         },
                         {
                             "name": "HTTP-Referer",
-                            "value": "={{ $env.NEXT_PUBLIC_APP_URL }}"
+                            "value": "={{ $env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}"
                         }
                     ]
                 },
                 "sendBody": true,
                 "specifyBody": "json",
-                "jsonBody": "={\n  \"model\": \"openai/gpt-3.5-turbo\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a content moderation AI. Return ONLY a JSON object: { 'label': 'safe' | 'hate_speech' | 'harassment' | 'sexual' | 'violence' | 'spam', 'score': 0.0-1.0 }. Score 0.0 is safe, 1.0 is severe.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $('Webhook').item.json.body.comment.content.replace(/\\\"/g, '\\\\\"') }}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n}",
+                "jsonBody": "={\n  \"model\": \"openai/gpt-3.5-turbo\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a content moderation AI. Analyze the user's comment for toxicity. Return ONLY a JSON object: { 'label': 'safe' | 'hate_speech' | 'harassment' | 'sexual' | 'violence' | 'spam', 'score': 0.0-1.0 }. Categories: 'hate_speech', 'harassment', 'sexual', 'violence', 'spam', 'safe'. Consider emojis and slang. Score 0.0 is safe, 1.0 is severe. JSON only.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.body.comment.content.replace(/\\\"/g, '\\\\\"') }}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n}",
                 "options": {
                     "timeout": 30000
                 }
@@ -150,7 +146,7 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 3,
             "position": [
-                520,
+                1320,
                 300
             ],
             "retryOnFail": true,
@@ -159,13 +155,13 @@
         },
         {
             "parameters": {
-                "jsCode": "try {\n  const content = $input.item.json.choices[0].message.content;\n  const parsed = JSON.parse(content);\n  \n  return {\n    json: {\n      label: parsed.label,\n      score: parsed.score,\n      model: \"openai/gpt-3.5-turbo\"\n    }\n  };\n} catch (error) {\n  return {\n    json: {\n      label: \"error\",\n      score: 0,\n      error: error.message\n    }\n  };\n}"
+                "jsCode": "try {\n  const content = $input.item.json.choices[0].message.content;\n  const parsed = JSON.parse(content);\n  \n  return {\n    json: {\n      label: parsed.label || 'unknown',\n      score: parsed.score || 0,\n      model: \"openai/gpt-3.5-turbo\"\n    }\n  };\n} catch (error) {\n  return {\n    json: {\n      label: \"error\",\n      score: 0,\n      error: error.message\n    }\n  };\n}"
             },
             "name": "Parse Response",
             "type": "n8n-nodes-base.code",
             "typeVersion": 1,
             "position": [
-                740,
+                1540,
                 300
             ]
         },
@@ -190,7 +186,7 @@
             "type": "n8n-nodes-base.if",
             "typeVersion": 1,
             "position": [
-                960,
+                1760,
                 300
             ]
         },
@@ -224,11 +220,11 @@
                     "parameters": [
                         {
                             "name": "comment_id",
-                            "value": "={{ $('Webhook').item.json.body.comment.id }}"
+                            "value": "={{ $('Extract Payload').item.json.body.comment.id }}"
                         },
                         {
                             "name": "user_id",
-                            "value": "={{ $('Webhook').item.json.body.comment.user_id }}"
+                            "value": "={{ $('Get Page Owner').item.json.user_id }}"
                         },
                         {
                             "name": "reason",
@@ -246,7 +242,7 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 3,
             "position": [
-                1200,
+                2000,
                 150
             ]
         },
@@ -280,7 +276,7 @@
                     "parameters": [
                         {
                             "name": "comment_id",
-                            "value": "={{ $('Webhook').item.json.body.comment.id }}"
+                            "value": "={{ $('Extract Payload').item.json.body.comment.id }}"
                         },
                         {
                             "name": "label",
@@ -302,7 +298,7 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 3,
             "position": [
-                1450,
+                2250,
                 300
             ]
         },
@@ -316,9 +312,175 @@
             "type": "n8n-nodes-base.respondToWebhook",
             "typeVersion": 1,
             "position": [
-                1650,
+                2450,
                 300
             ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/social_accounts",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Accept",
+                            "value": "application/vnd.pgrst.object+json"
+                        }
+                    ]
+                },
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "page_id",
+                            "value": "eq.{{ $('Extract Payload').item.json.body.page_id }}"
+                        },
+                        {
+                            "name": "select",
+                            "value": "user_id"
+                        }
+                    ]
+                }
+            },
+            "name": "Get Page Owner",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                500,
+                300
+            ],
+            "continueOnFail": true
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/posts",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "resolution=merge-duplicates"
+                        },
+                        {
+                            "name": "Accept",
+                            "value": "application/vnd.pgrst.object+json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "value": "={{ $('Extract Payload').item.json.body.post_id }}"
+                        },
+                        {
+                            "name": "user_id",
+                            "value": "={{ $('Get Page Owner').item.json.user_id }}"
+                        },
+                        {
+                            "name": "content",
+                            "value": "Post content placeholder"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "Upsert Post",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                700,
+                300
+            ],
+            "continueOnFail": true
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/comments",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "resolution=merge-duplicates"
+                        },
+                        {
+                            "name": "Accept",
+                            "value": "application/vnd.pgrst.object+json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "value": "={{ $('Extract Payload').item.json.body.comment.id }}"
+                        },
+                        {
+                            "name": "post_id",
+                            "value": "={{ $('Extract Payload').item.json.body.post_id }}"
+                        },
+                        {
+                            "name": "user_id",
+                            "value": "={{ $('Get Page Owner').item.json.user_id }}"
+                        },
+                        {
+                            "name": "content",
+                            "value": "={{ $('Extract Payload').item.json.body.comment.content }}"
+                        },
+                        {
+                            "name": "commenter_name",
+                            "value": "={{ $('Extract Payload').item.json.body.commenter_name }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "Upsert Comment",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                900,
+                300
+            ],
+            "continueOnFail": true
         }
     ],
     "connections": {
@@ -370,7 +532,7 @@
             "main": [
                 [
                     {
-                        "node": "OpenRouter AI",
+                        "node": "Get Page Owner",
                         "type": "main",
                         "index": 0
                     }
@@ -440,6 +602,39 @@
                 [
                     {
                         "node": "Respond Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Page Owner": {
+            "main": [
+                [
+                    {
+                        "node": "Upsert Post",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upsert Post": {
+            "main": [
+                [
+                    {
+                        "node": "Upsert Comment",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upsert Comment": {
+            "main": [
+                [
+                    {
+                        "node": "OpenRouter AI",
                         "type": "main",
                         "index": 0
                     }
