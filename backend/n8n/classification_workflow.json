@@ -69,13 +69,13 @@
         },
         {
             "parameters": {
-                "jsCode": "const item = $input.item.json;\nconsole.log('--- EXTRACT PAYLOAD START ---');\nconsole.log('Incoming Item:', JSON.stringify(item, null, 2));\n\nconst body = item.body || item;\nlet result = {};\n\n// Facebook/Instagram Webhook standard format\nif (body.entry && body.entry[0].changes) {\n    const change = body.entry[0].changes[0].value;\n    const isInstagram = body.object === 'instagram';\n    \n    result = {\n        body: {\n            comment: {\n                content: isInstagram ? change.text : change.message,\n                id: isInstagram ? change.id : change.comment_id,\n                user_id: isInstagram ? (change.from?.id || 'unknown') : change.from?.id\n            },\n            page_id: body.entry[0].id,\n            post_id: isInstagram ? (change.media?.id || 'unknown') : (change.post_id || body.entry[0].changes[0].value.post_id),\n            commenter_name: isInstagram ? (change.from?.username || 'Anonymous') : (change.from?.name || 'Anonymous')\n        }\n    };\n} else {\n    // Direct Ingestion / Test formats\n    result = {\n        body: {\n            comment: body.comment || item.comment || {},\n            page_id: body.page_id || item.page_id || 'unknown',\n            post_id: body.post_id || item.post_id || 'unknown',\n            commenter_name: body.commenter_name || item.commenter_name || 'Anonymous'\n        }\n    };\n}\n\nconsole.log('Final Prepared Result:', JSON.stringify(result, null, 2));\nreturn result;"
+                "jsCode": "const item = $input.item.json;\nconst body = item.body || item;\nlet result = {};\n\nif (body.entry && body.entry[0].changes) {\n    const change = body.entry[0].changes[0].value;\n    const isInstagram = body.object === 'instagram';\n    \n    result = {\n        body: {\n            comment: {\n                content: isInstagram ? change.text : change.message,\n                id: isInstagram ? change.id : change.comment_id,\n                user_id: isInstagram ? (change.from?.id || 'unknown') : (change.from?.id || 'unknown')\n            },\n            page_id: body.entry[0].id,\n            post_id: isInstagram ? (change.media?.id || 'unknown') : (change.post_id || body.entry[0].changes[0].value.post_id || 'unknown'),\n            commenter_name: isInstagram ? (change.from?.username || 'Anonymous') : (change.from?.name || 'Anonymous')\n        }\n    };\n} else {\n    result = {\n        body: {\n            comment: body.comment || item.comment || {},\n            page_id: body.page_id || item.page_id || 'unknown',\n            post_id: body.post_id || item.post_id || 'unknown',\n            commenter_name: body.commenter_name || item.commenter_name || 'Anonymous'\n        }\n    };\n}\n\nreturn [ { json: result } ];"
             },
             "name": "Extract Payload",
             "type": "n8n-nodes-base.code",
             "typeVersion": 1,
             "position": [
-                300,
+                400,
                 300
             ]
         },
@@ -98,14 +98,14 @@
             "type": "n8n-nodes-base.if",
             "typeVersion": 1,
             "position": [
-                300,
+                700,
                 300
             ]
         },
         {
             "parameters": {
                 "respondWith": "json",
-                "responseBody": "={\n  \"success\": false,\n  \"error\": \"Missing required fields: comment.content or comment.id\"\n}",
+                "responseBody": "={\n  \"success\": false,\n  \"error\": \"Missing required fields: comment.content or comment.id\",\n  \"received\": {{ JSON.stringify($json) }}\n}",
                 "options": {
                     "responseCode": 400
                 }
