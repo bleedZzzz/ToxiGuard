@@ -302,8 +302,7 @@
         },
         {
             "parameters": {
-                "respondWith": "json",
-                "responseBody": "={{ {\n  \"success\": true,\n  \"label\": $('Parse Response').item?.json?.label || 'error',\n  \"score\": $('Parse Response').item?.json?.score || 0,\n  \"meta\": {\n     \"groq_status\": $('Groq AI').item?.json ? 'OK' : 'FAIL',\n     \"parse_status\": $('Parse Response').item?.json ? 'OK' : 'FAIL',\n     \"error\": $('Parse Response').item?.json?.error || 'Unknown error'\n  }\n} }}",
+                "respondWith": "allIncomingItems",
                 "options": {}
             },
             "name": "Respond Success",
