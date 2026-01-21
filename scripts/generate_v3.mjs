@@ -92,14 +92,14 @@ const getOwnerNode = {
     "name": "Get Page Owner",
     "type": "n8n-nodes-base.httpRequest",
     "typeVersion": 3,
-    "position": [500, 300]
+    "position": [500, 300],
+    "continueOnFail": true
 };
 
 // 3. Add "Upsert Post" Node
-// Note: using .user_id directly now
 const upsertPostNode = createSupabaseNode("Upsert Post", "POST", "posts", [
     { "name": "id", "value": "={{ $('Extract Payload').item.json.body.post_id }}" },
-    { "name": "user_id", "value": "da554f2f-6c3f-49b7-83b5-b2aa1763464b" },
+    { "name": "user_id", "value": "={{ $('Get Page Owner').item.json.user_id }}" },
     { "name": "content", "value": "Post content placeholder" }
 ], [700, 300]);
 
@@ -107,18 +107,17 @@ const upsertPostNode = createSupabaseNode("Upsert Post", "POST", "posts", [
 const upsertCommentNode = createSupabaseNode("Upsert Comment", "POST", "comments", [
     { "name": "id", "value": "={{ $('Extract Payload').item.json.body.comment.id }}" },
     { "name": "post_id", "value": "={{ $('Extract Payload').item.json.body.post_id }}" },
-    { "name": "user_id", "value": "da554f2f-6c3f-49b7-83b5-b2aa1763464b" },
+    { "name": "user_id", "value": "={{ $('Get Page Owner').item.json.user_id }}" },
     { "name": "content", "value": "={{ $('Extract Payload').item.json.body.comment.content }}" },
     { "name": "commenter_name", "value": "={{ $('Extract Payload').item.json.body.commenter_name }}" }
 ], [900, 300]);
 
 
-// 5. Update Respond Success to return Debug Info
-const respondNode = workflow.nodes.find(n => n.name === 'Respond Success');
-respondNode.parameters.respondWith = "text";
-respondNode.parameters.responseBody = "DEBUG_CHECK_WORKS";
+// REWIRE NODES
+// Old: Extract Payload -> Validate Input -> OpenRouter AI
+// New: Extract Payload -> Validate Input -> Get Page Owner -> Upsert Post -> Upsert Comment -> OpenRouter AI
 
-// REWIRE NODES (SHIFT RIGHT)
+// Move existing nodes to the right
 const shiftX = 800;
 ['OpenRouter AI', 'Parse Response', 'Smart Routing', 'Create Report', 'Log Score', 'Respond Success', 'Respond Error'].forEach(name => {
     const node = workflow.nodes.find(n => n.name === name);
@@ -138,10 +137,10 @@ workflow.connections["Get Page Owner"] = { "main": [[{ "node": "Upsert Post", "t
 // Upsert Post -> Upsert Comment
 workflow.connections["Upsert Post"] = { "main": [[{ "node": "Upsert Comment", "type": "main", "index": 0 }]] };
 
-// Upsert Comment -> Respond Success (Short Circuit for Debugging)
-workflow.connections["Upsert Comment"] = { "main": [[{ "node": "Respond Success", "type": "main", "index": 0 }]] };
+// Upsert Comment -> OpenRouter AI
+workflow.connections["Upsert Comment"] = { "main": [[{ "node": "OpenRouter AI", "type": "main", "index": 0 }]] };
 
 
 // Save v3
 fs.writeFileSync(path.join(__dirname, '../backend/n8n/classification_workflow_v3.json'), JSON.stringify(workflow, null, 4));
-console.log('Generated v3 workflow (DEBUG MODE)');
+console.log('Generated v3 workflow (PRODUCTION MODE)');

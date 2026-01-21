@@ -308,8 +308,8 @@
         },
         {
             "parameters": {
-                "respondWith": "text",
-                "responseBody": "DEBUG_CHECK_WORKS",
+                "respondWith": "json",
+                "responseBody": "={\n  \"success\": true,\n  \"classification\": {\n     \"label\": \"{{ $('Parse Response').item.json.label }}\",\n     \"score\": {{ $('Parse Response').item.json.score }}\n  },\n  \"flagged_for_review\": {{ $('Smart Routing').item.json ? 'true' : 'false' }}\n}",
                 "options": {}
             },
             "name": "Respond Success",
@@ -361,7 +361,8 @@
             "position": [
                 500,
                 300
-            ]
+            ],
+            "continueOnFail": true
         },
         {
             "parameters": {
@@ -401,7 +402,7 @@
                         },
                         {
                             "name": "user_id",
-                            "value": "da554f2f-6c3f-49b7-83b5-b2aa1763464b"
+                            "value": "={{ $('Get Page Owner').item.json.user_id }}"
                         },
                         {
                             "name": "content",
@@ -462,7 +463,7 @@
                         },
                         {
                             "name": "user_id",
-                            "value": "da554f2f-6c3f-49b7-83b5-b2aa1763464b"
+                            "value": "={{ $('Get Page Owner').item.json.user_id }}"
                         },
                         {
                             "name": "content",
@@ -637,7 +638,7 @@
             "main": [
                 [
                     {
-                        "node": "Respond Success",
+                        "node": "OpenRouter AI",
                         "type": "main",
                         "index": 0
                     }
