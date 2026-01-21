@@ -300,7 +300,7 @@
         {
             "parameters": {
                 "respondWith": "json",
-                "responseBody": "={\n  \"success\": true,\n  \"classification\": {\n     \"label\": \"{{ $('Parse Response').item.json.label }}\",\n     \"score\": {{ $('Parse Response').item.json.score }}\n  },\n  \"flagged_for_review\": {{ $('Smart Routing').item.json ? 'true' : 'false' }}\n}",
+                "responseBody": "{\n  \"success\": true,\n  \"msg\": \"Success node reached\"\n}",
                 "options": {}
             },
             "name": "Respond Success",
