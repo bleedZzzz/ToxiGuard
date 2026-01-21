@@ -11,9 +11,9 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkAccounts() {
-    const { data, error } = await supabase.from('social_accounts').select('user_id');
+    const { data, error } = await supabase.from('social_accounts').select('*');
     if (error) console.error(error);
-    else console.log('USER_ID:', data?.[0]?.user_id);
+    else console.log('ACCOUNTS:', JSON.stringify(data, null, 2));
 }
 
 checkAccounts();

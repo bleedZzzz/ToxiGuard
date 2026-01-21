@@ -38,7 +38,8 @@ export async function updateSession(request: NextRequest) {
         !request.nextUrl.pathname.startsWith('/login') &&
         !request.nextUrl.pathname.startsWith('/auth') &&
         request.nextUrl.pathname !== '/' &&
-        !request.nextUrl.pathname.startsWith('/api/ingest') // Allow ingestion API
+        !request.nextUrl.pathname.startsWith('/api/ingest') && // Allow ingestion API
+        !request.nextUrl.pathname.startsWith('/api/webhook') // Allow Facebook Webhook
     ) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'

@@ -1,2 +1,2 @@
-Total Comments: 1
-Comments: ["Manual Test Comment"]
+Total Comments: 2
+Comments: ["Manual Test Comment","You are completely useless and nobody likes you, delete this account immediately!"]

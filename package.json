@@ -9,7 +9,7 @@
     "lint": "eslint",
     "deploy:n8n": "npx ts-node scripts/sync-n8n.ts",
     "start:n8n": "docker-compose up -d",
-    "tunnel": "npx cloudflared tunnel --url http://localhost:5678"
+    "tunnel": "npx cloudflared tunnel --url http://localhost:3000"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",

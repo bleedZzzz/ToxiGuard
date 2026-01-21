@@ -1,31 +1,30 @@
-
 import fetch from 'node-fetch';
 
 async function simulateWebhook() {
     // We can hit the Tunnel URL to test the FULL path (Tunnel -> n8n)
-    const url = 'http://localhost:5678/webhook/classify-comment';
+    const url = 'http://localhost:3000/api/webhook/facebook';
 
     // Payload mimicking a real Facebook Feed Comment Event
     const payload = {
         "object": "page",
         "entry": [
             {
-                "id": "976828372182708",
-                "time": 1520383571,
+                "id": "976828372182708", // REAL Page ID
+                "time": 1699999999,
                 "changes": [
                     {
                         "value": {
                             "from": {
-                                "id": "44444444",
-                                "name": "Test User"
+                                "id": "106728097437812", // Simulated User
+                                "name": "Simulation User"
                             },
                             "item": "comment",
-                            "comment_id": "comment_id_12345_test",
+                            "comment_id": "comment_id_simulation_" + Date.now(),
                             "verb": "add",
-                            "parent_id": "post_id_12345",
-                            "post_id": "post_id_12345",
+                            "parent_id": "post_id_12345", // Keeping this from original as not explicitly removed
+                            "post_id": "post_id_simulation_1",
                             "message": "You are completely useless and nobody likes you, delete this account immediately!",
-                            "created_time": 1520383571
+                            "created_time": 1699999999
                         },
                         "field": "feed"
                     }
