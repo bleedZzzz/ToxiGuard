@@ -302,7 +302,7 @@
         {
             "parameters": {
                 "respondWith": "json",
-                "responseBody": "={\n  \"success\": true,\n  \"classification\": {\n     \"label\": \"{{ $('Parse Response').item.json.label }}\",\n     \"score\": {{ $('Parse Response').item.json.score }},\n     \"error\": \"{{ $('Parse Response').item.json.error || '' }}\",\n     \"raw\": {{ JSON.stringify($('Parse Response').item.json.raw || {}) }}\n  },\n  \"flagged_for_review\": {{ $('Smart Routing').item.json ? true : false }}\n}",
+                "responseBody": "={{ {\n  \"success\": true,\n  \"classification\": {\n     \"label\": $('Parse Response').item?.json?.label || 'unknown',\n     \"score\": $('Parse Response').item?.json?.score || 0,\n     \"error\": $('Parse Response').item?.json?.error || '',\n     \"raw\": $('Parse Response').item?.json?.raw || {}\n  },\n  \"flagged_for_review\": $('Smart Routing').item?.json ? true : false\n} }}",
                 "options": {}
             },
             "name": "Respond Success",
