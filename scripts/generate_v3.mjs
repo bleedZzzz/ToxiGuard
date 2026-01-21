@@ -75,7 +75,8 @@ const getOwnerNode = {
         "headerParameters": {
             "parameters": [
                 { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-                { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+                { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+                { "name": "Accept", "value": "application/vnd.pgrst.object+json" }
             ]
         },
         "sendQuery": true,
@@ -95,7 +96,7 @@ const getOwnerNode = {
 // 3. Add "Upsert Post" Node
 const upsertPostNode = createSupabaseNode("Upsert Post", "POST", "posts", [
     { "name": "id", "value": "={{ $('Extract Payload').item.json.body.post_id }}" },
-    { "name": "user_id", "value": "={{ $('Get Page Owner').item.json[0].user_id }}" },
+    { "name": "user_id", "value": "={{ $('Get Page Owner').item.json.user_id }}" },
     { "name": "content", "value": "Post content placeholder" }
 ], [700, 300]);
 
@@ -103,7 +104,7 @@ const upsertPostNode = createSupabaseNode("Upsert Post", "POST", "posts", [
 const upsertCommentNode = createSupabaseNode("Upsert Comment", "POST", "comments", [
     { "name": "id", "value": "={{ $('Extract Payload').item.json.body.comment.id }}" },
     { "name": "post_id", "value": "={{ $('Extract Payload').item.json.body.post_id }}" },
-    { "name": "user_id", "value": "={{ $('Get Page Owner').item.json[0].user_id }}" },
+    { "name": "user_id", "value": "={{ $('Get Page Owner').item.json.user_id }}" },
     { "name": "content", "value": "={{ $('Extract Payload').item.json.body.comment.content }}" },
     { "name": "commenter_name", "value": "={{ $('Extract Payload').item.json.body.commenter_name }}" }
 ], [900, 300]);
@@ -139,4 +140,4 @@ workflow.connections["Upsert Comment"] = { "main": [[{ "node": "OpenRouter AI", 
 
 // Save v3
 fs.writeFileSync(path.join(__dirname, '../backend/n8n/classification_workflow_v3.json'), JSON.stringify(workflow, null, 4));
-console.log('Generated v3 workflow');
+console.log('Generated v3 workflow with Accept header and flat user_id');
