@@ -35,7 +35,8 @@ function createSupabaseNode(name, method, urlPath, bodyParams, position) {
         "name": name,
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 3,
-        "position": position
+        "position": position,
+        "continueOnFail": true
     };
 }
 

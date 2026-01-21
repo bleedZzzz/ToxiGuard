@@ -417,7 +417,8 @@
             "position": [
                 700,
                 300
-            ]
+            ],
+            "continueOnFail": true
         },
         {
             "parameters": {
@@ -481,7 +482,8 @@
             "position": [
                 900,
                 300
-            ]
+            ],
+            "continueOnFail": true
         }
     ],
     "connections": {
