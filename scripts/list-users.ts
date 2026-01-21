@@ -19,7 +19,7 @@ async function listUsers() {
         return;
     }
 
-    const output = users.map(u => `Email: ${u.email} | ID: ${u.id}`).join('\n');
+    const output = users.map(u => `Email: ${u.email} | ID: ${u.id} | Confirmed: ${u.email_confirmed_at ? 'YES' : 'NO'}`).join('\n');
     console.log(output);
     fs.writeFileSync('users_output.txt', output);
 }

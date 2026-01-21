@@ -303,7 +303,7 @@
         {
             "parameters": {
                 "respondWith": "json",
-                "responseBody": "={{ {\n  \"success\": true,\n  \"classification\": {\n     \"label\": $('Parse Response').item?.json?.label || 'unknown',\n     \"score\": $('Parse Response').item?.json?.score || 0,\n     \"error\": $('Parse Response').item?.json?.error || '',\n     \"raw\": $('Parse Response').item?.json?.raw || {},\n     \"debug\": $('Parse Response').item?.json || {},\n     \"groq_raw\": $('Groq AI').item?.json || {},\n     \"user_id_debug\": $('Get Page Owner').item?.json?.user_id || 'MISSING',\n     \"create_report_debug\": $('Create Report')?.item?.json || 'NOT_EXEC',\n     \"log_score_debug\": $('Log Score')?.item?.json || 'NOT_EXEC'\n  },\n  \"flagged_for_review\": $('Smart Routing').item?.json ? true : false\n} }}",
+                "responseBody": "={{ {\n  \"success\": true,\n  \"label\": $('Parse Response').item?.json?.label || 'error',\n  \"score\": $('Parse Response').item?.json?.score || 0,\n  \"meta\": {\n     \"groq_status\": $('Groq AI').item?.json ? 'OK' : 'FAIL',\n     \"parse_status\": $('Parse Response').item?.json ? 'OK' : 'FAIL',\n     \"error\": $('Parse Response').item?.json?.error || 'Unknown error'\n  }\n} }}",
                 "options": {}
             },
             "name": "Respond Success",

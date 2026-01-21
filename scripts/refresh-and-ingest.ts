@@ -13,8 +13,8 @@ const n8nWebhookUrl = process.env.N8N_BASE_URL ? `${process.env.N8N_BASE_URL.rep
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Known Page ID from previous successful connections
-const FORCE_PAGE_ID = '976828372182708';
+// Known Page ID from environment
+const FORCE_PAGE_ID = process.env.META_PAGE_ID || '1614940733203422';
 
 async function ingest() {
     console.log('🚀 Starting Robust Ingestion...');
