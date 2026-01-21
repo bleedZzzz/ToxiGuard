@@ -120,7 +120,7 @@
         },
         {
             "parameters": {
-                "jsCode": "const content = ($input.item.json.content || $input.item.json.body?.comment?.content || '').toLowerCase();\nlet label = 'safe';\nlet score = 0.1;\n\nif (content.includes('idiot') || content.includes('hate') || content.includes('die')) {\n    label = 'hate_speech';\n    score = 0.95;\n} else if (content.includes('spam') || content.includes('fake')) {\n    label = 'spam';\n    score = 0.8;\n} else if (content.includes('agree')) {\n    label = 'safe';\n    score = 0.05;\n}\n\nreturn {\n  json: {\n    choices: [\n      {\n        message: {\n          content: JSON.stringify({\n            label: label,\n            score: score\n          })\n        }\n      }\n    ]\n  }\n};"
+                "jsCode": "const inputData = $input.item.json;\nconst content = (inputData.content || inputData.body?.comment?.content || '').toLowerCase();\nlet label = 'safe';\nlet score = 0.1;\n\nif (content.includes('idiot') || content.includes('hate') || content.includes('die')) {\n    label = 'hate_speech';\n    score = 0.95;\n} else if (content.includes('spam') || content.includes('fake')) {\n    label = 'spam';\n    score = 0.8;\n} else if (content.includes('agree')) {\n    label = 'safe';\n    score = 0.05;\n}\n\nreturn {\n  json: {\n    choices: [\n      {\n        message: {\n          content: JSON.stringify({\n            label: label,\n            score: score,\n            debug_input_keys: Object.keys(inputData),\n            debug_content_found: content\n          })\n        }\n      }\n    ]\n  }\n};"
             },
             "name": "OpenRouter AI",
             "type": "n8n-nodes-base.code",
