@@ -65,6 +65,7 @@ async function syncWorkflow() {
         }
         execSync('git push', { stdio: 'inherit' });
         console.log('✅ Successfully pushed to GitHub!');
+        // console.log('✅ Sync complete (Git push skipped)');
 
     } catch (error: any) {
         if (error.message.includes('404')) {

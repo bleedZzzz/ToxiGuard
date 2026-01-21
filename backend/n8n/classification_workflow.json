@@ -121,28 +121,28 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "https://openrouter.ai/api/v1/chat/completions",
+                "url": "https://api.groq.com/openai/v1/chat/completions",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
                         {
                             "name": "Authorization",
-                            "value": "Bearer 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"
+                            "value": "Bearer {{ $env.GROQ_API_KEY }}"
                         },
                         {
-                            "name": "HTTP-Referer",
-                            "value": "http://localhost:3000"
+                            "name": "Content-Type",
+                            "value": "application/json"
                         }
                     ]
                 },
                 "sendBody": true,
                 "specifyBody": "json",
-                "jsonBody": "={\n  \"model\": \"liquid/lfm-40b\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a strict content moderation AI. Your goal is to detect toxicity in social media comments. \\n\\nGuidelines for scoring:\\n- 0.0 to 0.2: Purely safe, helpful, or neutral.\\n- 0.3 to 0.5: Sarcastic, mildly annoying, or potentially spam but not abusive.\\n- 0.6 to 0.8: Offensive, insulting, or aggressive.\\n- 0.9 to 1.0: Severe hate speech, threats, or explicit harassment.\\n\\nConsider emojis and slang. If a comment contains clear insults, it MUST be above 0.7. \\n\\nReturn ONLY a JSON object: { 'label': 'safe' | 'hate_speech' | 'harassment' | 'sexual' | 'violence' | 'spam', 'score': 0.0-1.0 }. JSON only.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": {{ JSON.stringify($('Extract Payload').item.json.body.comment.content) }}\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" },\n  \"options\": {\n     \"timeout\": 30000\n  }\n}",
+                "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a JSON-only toxicity classifier. Analyze the comment and return a JSON object with this exact schema: { \\\"label\\\": \\\"safe\\\" | \\\"hate_speech\\\" | \\\"harassment\\\" | \\\"sexual\\\" | \\\"violence\\\" | \\\"spam\\\", \\\"score\\\": 0.0-1.0 }. \\n\\nScoring Guide:\\n- <0.3: Safe\\n- >0.7: Toxic (insults, hate, threats)\\n\\nOUTPUT JSON ONLY. NO MARKDOWN. NO EXPLANATIONS.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": {{ JSON.stringify($('Extract Payload').item.json.body.comment.content) }}\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" },\n  \"options\": {\n     \"timeout\": 30000\n  }\n}",
                 "options": {
                     "timeout": 30000
                 }
             },
-            "name": "OpenRouter AI",
+            "name": "Groq AI",
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 3,
             "position": [
@@ -156,7 +156,7 @@
         },
         {
             "parameters": {
-                "jsCode": "try {\n  if (!$input.item || !$input.item.json) {\n     return { json: { label: 'error', score: 0, error: 'No input items received', raw: {} } };\n  }\n  \n  const input = $input.item.json;\n  \n  // Check for n8n error structure\n  if (input.error) {\n      return { json: { label: 'error', score: 0, error: JSON.stringify(input), raw: input } };\n  }\n\n  if (!input.choices) {\n     return { json: { label: 'error', score: 0, error: 'No choices in response', raw: input } };\n  }\n  const content = input.choices[0].message.content;\n  const parsed = JSON.parse(content);\n  \n  return {\n    json: {\n      ...parsed,\n      model: \"openai/gpt-3.5-turbo\"\n    }\n  };\n} catch (error) {\n  return {\n    json: {\n      label: \"error\",\n      score: 0,\n      error: error.message,\n      raw: ($input.item ? $input.item.json : {})\n    }\n  };\n}"
+                "jsCode": "try {\n  if (!$input.item || !$input.item.json) {\n     return { json: { label: 'error', score: 0, error: 'No input items received', raw: {} } };\n  }\n  \n  const input = $input.item.json;\n  \n  // Check for n8n error structure\n  if (input.error) {\n      return { json: { label: 'error', score: 0, error: JSON.stringify(input), raw: input } };\n  }\n\n  if (!input.choices) {\n     return { json: { label: 'error', score: 0, error: 'No choices in response', raw: input } };\n  }\n  let content = input.choices[0].message.content;\n  \n  // Strip markdown code blocks if present\n  content = content.replace(/^```json\\s*/, '').replace(/\\s*```$/, '');\n  \n  const parsed = JSON.parse(content);\n  \n  return {\n    json: {\n      ...parsed,\n      model: \"groq/llama-3.3-70b-versatile\"\n    }\n  };\n} catch (error) {\n  return {\n    json: {\n      label: \"error\",\n      score: 0,\n      error: error.message,\n      raw: ($input.item ? $input.item.json : {})\n    }\n  };\n}"
             },
             "name": "Parse Response",
             "type": "n8n-nodes-base.code",
@@ -188,18 +188,18 @@
         },
         {
             "parameters": {
-                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/reports",
+                "url": "https://oprngegqyioznvwavkku.supabase.co/rest/v1/reports",
                 "method": "POST",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
                         {
                             "name": "apikey",
-                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                            "value": "{{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
                         },
                         {
                             "name": "Authorization",
-                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                            "value": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
                         },
                         {
                             "name": "Content-Type",
@@ -220,7 +220,7 @@
                         },
                         {
                             "name": "user_id",
-                            "value": "={{ $('Get Page Owner').item.json.user_id }}"
+                            "value": "da554f2f-6c3f-49b7-83b5-b2aa1763464b"
                         },
                         {
                             "name": "reason",
@@ -232,7 +232,8 @@
                         }
                     ]
                 },
-                "options": {}
+                "options": {},
+                "continueOnFail": true
             },
             "name": "Create Report",
             "type": "n8n-nodes-base.httpRequest",
@@ -244,18 +245,18 @@
         },
         {
             "parameters": {
-                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/toxicity_scores",
+                "url": "https://oprngegqyioznvwavkku.supabase.co/rest/v1/toxicity_scores",
                 "method": "POST",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
                         {
                             "name": "apikey",
-                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                            "value": "{{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
                         },
                         {
                             "name": "Authorization",
-                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                            "value": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
                         },
                         {
                             "name": "Content-Type",
@@ -302,7 +303,7 @@
         {
             "parameters": {
                 "respondWith": "json",
-                "responseBody": "={{ {\n  \"success\": true,\n  \"classification\": {\n     \"label\": $('Parse Response').item?.json?.label || 'unknown',\n     \"score\": $('Parse Response').item?.json?.score || 0,\n     \"error\": $('Parse Response').item?.json?.error || '',\n     \"raw\": $('Parse Response').item?.json?.raw || {},\n     \"debug\": $('Parse Response').item?.json || {}\n  },\n  \"flagged_for_review\": $('Smart Routing').item?.json ? true : false\n} }}",
+                "responseBody": "={{ {\n  \"success\": true,\n  \"classification\": {\n     \"label\": $('Parse Response').item?.json?.label || 'unknown',\n     \"score\": $('Parse Response').item?.json?.score || 0,\n     \"error\": $('Parse Response').item?.json?.error || '',\n     \"raw\": $('Parse Response').item?.json?.raw || {},\n     \"debug\": $('Parse Response').item?.json || {},\n     \"groq_raw\": $('Groq AI').item?.json || {},\n     \"user_id_debug\": $('Get Page Owner').item?.json?.user_id || 'MISSING',\n     \"create_report_debug\": $('Create Report')?.item?.json || 'NOT_EXEC',\n     \"log_score_debug\": $('Log Score')?.item?.json || 'NOT_EXEC'\n  },\n  \"flagged_for_review\": $('Smart Routing').item?.json ? true : false\n} }}",
                 "options": {}
             },
             "name": "Respond Success",
@@ -316,17 +317,17 @@
         {
             "parameters": {
                 "method": "GET",
-                "url": "={{ $env.NEXT_PUBLIC_SUPABASE_URL }}/rest/v1/social_accounts",
+                "url": "https://oprngegqyioznvwavkku.supabase.co/rest/v1/social_accounts",
                 "sendHeaders": true,
                 "headerParameters": {
                     "parameters": [
                         {
                             "name": "apikey",
-                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                            "value": "{{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
                         },
                         {
                             "name": "Authorization",
-                            "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                            "value": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
                         },
                         {
                             "name": "Accept",
@@ -366,11 +367,11 @@
                     "parameters": [
                         {
                             "name": "apikey",
-                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcm5nZWdxeWlvem52d2F2a2t1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDY4NTU1OCwiZXhwIjoyMDgwMjYxNTU4fQ.6_Ur49jzOsAkXwLyq_pfgbLTDNftjr76lIZVsJ630WE"
+                            "value": "{{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
                         },
                         {
                             "name": "Authorization",
-                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcm5nZWdxeWlvem52d2F2a2t1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDY4NTU1OCwiZXhwIjoyMDgwMjYxNTU4fQ.6_Ur49jzOsAkXwLyq_pfgbLTDNftjr76lIZVsJ630WE"
+                            "value": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
                         },
                         {
                             "name": "Content-Type",
@@ -423,11 +424,11 @@
                     "parameters": [
                         {
                             "name": "apikey",
-                            "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcm5nZWdxeWlvem52d2F2a2t1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDY4NTU1OCwiZXhwIjoyMDgwMjYxNTU4fQ.6_Ur49jzOsAkXwLyq_pfgbLTDNftjr76lIZVsJ630WE"
+                            "value": "{{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
                         },
                         {
                             "name": "Authorization",
-                            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcm5nZWdxeWlvem52d2F2a2t1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDY4NTU1OCwiZXhwIjoyMDgwMjYxNTU4fQ.6_Ur49jzOsAkXwLyq_pfgbLTDNftjr76lIZVsJ630WE"
+                            "value": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
                         },
                         {
                             "name": "Content-Type",
@@ -456,7 +457,7 @@
                         },
                         {
                             "name": "user_id",
-                            "value": "={{ $('Get Page Owner').item.json.user_id }}"
+                            "value": "da554f2f-6c3f-49b7-83b5-b2aa1763464b"
                         },
                         {
                             "name": "content",
@@ -543,7 +544,7 @@
                 ]
             ]
         },
-        "OpenRouter AI": {
+        "Groq AI": {
             "main": [
                 [
                     {
@@ -569,14 +570,14 @@
             "main": [
                 [
                     {
-                        "node": "Respond Success",
+                        "node": "Create Report",
                         "type": "main",
                         "index": 0
                     }
                 ],
                 [
                     {
-                        "node": "Respond Success",
+                        "node": "Log Score",
                         "type": "main",
                         "index": 0
                     }
@@ -631,7 +632,7 @@
             "main": [
                 [
                     {
-                        "node": "OpenRouter AI",
+                        "node": "Groq AI",
                         "type": "main",
                         "index": 0
                     }
