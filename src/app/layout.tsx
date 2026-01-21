@@ -4,7 +4,7 @@ import './globals.css'
 import { Navbar } from '@/components/Navbar'
 import { createClient } from '@/lib/supabase/server'
 import { Toaster } from '@/components/ui/sonner'
-import { TubesCursorAnimation } from '@/components/TubesCursorAnimation'
+
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -24,7 +24,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-background`}>
-        <TubesCursorAnimation />
+
         <div className="min-h-screen font-sans antialiased">
           <Navbar user={user} />
           <main className="container py-6">

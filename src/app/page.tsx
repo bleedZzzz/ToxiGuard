@@ -1,10 +1,12 @@
 import Link from 'next/link'
+import { TubesCursorAnimation } from '@/components/TubesCursorAnimation'
 import { Button } from '@/components/ui/button'
 import { ShieldCheck, Zap, BarChart3 } from 'lucide-react'
 
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+      <TubesCursorAnimation />
       <section className="flex-1 flex flex-col items-center justify-center space-y-10 py-24 text-center md:py-32">
         <div className="space-y-4 max-w-3xl">
           <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">

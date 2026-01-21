@@ -69,6 +69,18 @@
         },
         {
             "parameters": {
+                "jsCode": "const body = $input.item.json.body;\n\n// Check if it's a verify challenge (already handled) or a feed event\nif (body.object === 'page' && body.entry && body.entry[0].changes && body.entry[0].changes[0].value.item === 'comment') {\n  const commentData = body.entry[0].changes[0].value;\n  return {\n    json: {\n      body: {\n        comment: {\n          content: commentData.message,\n          id: commentData.comment_id,\n          user_id: commentData.from.id\n        }\n      }\n    }\n  };\n}\n\n// Pass through if structure is different (or test simulation)\nreturn {\n  json: $input.item.json\n};"
+            },
+            "name": "Extract Payload",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                300,
+                300
+            ]
+        },
+        {
+            "parameters": {
                 "conditions": {
                     "string": [
                         {
@@ -333,6 +345,17 @@
             ]
         },
         "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Payload": {
             "main": [
                 [
                     {

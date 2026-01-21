@@ -22,7 +22,7 @@ create table public.social_accounts (
   user_id uuid references public.profiles(id) not null,
   platform text not null, -- 'facebook' or 'instagram'
   access_token text not null, -- Encrypt this in production!
-  page_id text not null,
+  page_id text not null unique,
   page_name text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -37,6 +37,9 @@ create policy "Users can insert own social accounts" on public.social_accounts
 
 create policy "Users can delete own social accounts" on public.social_accounts
   for delete using (auth.uid() = user_id);
+
+create policy "Users can update own social accounts" on public.social_accounts
+  for update using (auth.uid() = user_id);
 
 -- Create posts table
 create table public.posts (

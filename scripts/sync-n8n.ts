@@ -23,10 +23,11 @@ if (!N8N_API_KEY || !N8N_WORKFLOW_ID) {
 }
 
 async function syncWorkflow() {
+    let workflowJson: any;
     try {
         console.log('🔄 Reading local workflow file...');
         const workflowData = fs.readFileSync(WORKFLOW_FILE_PATH, 'utf8');
-        const workflowJson = JSON.parse(workflowData);
+        workflowJson = JSON.parse(workflowData);
 
         console.log(`🚀 push to n8n instance (${N8N_BASE_URL})...`);
         const response = await fetch(`${N8N_BASE_URL}/api/v1/workflows/${N8N_WORKFLOW_ID}`, {
@@ -66,6 +67,38 @@ async function syncWorkflow() {
         console.log('✅ Successfully pushed to GitHub!');
 
     } catch (error: any) {
+        if (error.message.includes('404')) {
+            console.log('⚠️ Workflow not found. Creating a new one...');
+            try {
+                const response = await fetch(`${N8N_BASE_URL}/api/v1/workflows`, {
+                    method: 'POST',
+                    headers: {
+                        'X-N8N-API-KEY': N8N_API_KEY!,
+                        'Content-Type': 'application/json',
+                    } as Record<string, string>,
+                    body: JSON.stringify({
+                        name: workflowJson.name,
+                        nodes: workflowJson.nodes,
+                        connections: workflowJson.connections,
+                        settings: workflowJson.settings || {},
+                        staticData: workflowJson.staticData,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to create workflow: ${await response.text()}`);
+                }
+
+                const newWorkflow = await response.json();
+                console.log('✅ Successfully created new workflow!');
+                console.log(`🆕 NEW ID: ${newWorkflow.id}`);
+                console.log('⚠️ IMPORTANT: Please update your .env file with this new N8N_WORKFLOW_ID!');
+                return;
+            } catch (createError: any) {
+                console.error('❌ Failed to create workflow:', createError.message);
+                process.exit(1);
+            }
+        }
         console.error('❌ Failed to sync workflow:', error.message);
         process.exit(1);
     }
