@@ -172,12 +172,7 @@
                         {
                             "value1": "={{ $json.score }}",
                             "operation": "largerEqual",
-                            "value2": 0.6
-                        },
-                        {
-                            "value1": "={{ $json.score }}",
-                            "operation": "smallerEqual",
-                            "value2": 0.9
+                            "value2": 0.5
                         }
                     ]
                 }

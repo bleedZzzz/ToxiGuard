@@ -71,7 +71,7 @@ async function ingest() {
     for (const account of accountsToProcess) {
         console.log(`\n📂 Ingesting from: ${account.name}`);
 
-        const postsRes = await fetch(`https://graph.facebook.com/v19.0/${account.id}/posts?access_token=${account.token}&limit=5`);
+        const postsRes = await fetch(`https://graph.facebook.com/v19.0/${account.id}/feed?access_token=${account.token}&limit=25`);
         const postsData = await postsRes.json() as any;
 
         if (postsData.error) {
@@ -83,12 +83,21 @@ async function ingest() {
         console.log(`   Found ${posts.length} posts.`);
 
         for (const post of posts) {
-            console.log(`   📝 Post: ${post.id}`);
-            const commsRes = await fetch(`https://graph.facebook.com/v19.0/${post.id}/comments?access_token=${account.token}`);
+            console.log(`   📝 Post: ${post.id} (${post.message || 'No message'})`);
+            const commsUrl = `https://graph.facebook.com/v19.0/${post.id}/comments?access_token=${account.token}`;
+            const commsRes = await fetch(commsUrl);
             const commsData = await commsRes.json() as any;
+
+            if (commsData.error) {
+                console.error(`      ❌ Failed to fetch comments: ${commsData.error.message}`);
+                continue;
+            }
+
             const comments = commsData.data || [];
+            console.log(`      Found ${comments.length} comments.`);
 
             for (const comment of comments) {
+                console.log(`      💬 Comment: ${comment.message}`);
                 const payload = {
                     object: 'page',
                     entry: [{
@@ -113,7 +122,7 @@ async function ingest() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                console.log(`      ✅ Sent comment ${comment.id}`);
+                console.log(`      ✅ Sent comment ${comment.id} to n8n`);
             }
         }
     }
