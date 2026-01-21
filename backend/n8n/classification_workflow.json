@@ -156,7 +156,7 @@
         },
         {
             "parameters": {
-                "jsCode": "try {\n  const input = $input.item.json;\n  \n  // Check for n8n error structure\n  if (input.error) {\n      return { json: { label: 'error', score: 0, error: input.message || input.error, raw: input } };\n  }\n\n  if (!input.choices) {\n     return { json: { label: 'error', score: 0, error: 'No choices in response', raw: input } };\n  }\n  const content = input.choices[0].message.content;\n  const parsed = JSON.parse(content);\n  \n  return {\n    json: {\n      label: parsed.label || 'unknown',\n      score: parsed.score || 0,\n      model: \"openai/gpt-3.5-turbo\"\n    }\n  };\n} catch (error) {\n  return {\n    json: {\n      label: \"error\",\n      score: 0,\n      error: error.message,\n      raw: $input.item.json\n    }\n  };\n}"
+                "jsCode": "try {\n  const input = $input.item.json;\n  \n  // Check for n8n error structure\n  if (input.error) {\n      return { json: { label: 'error', score: 0, error: JSON.stringify(input), raw: input } };\n  }\n\n  if (!input.choices) {\n     return { json: { label: 'error', score: 0, error: 'No choices in response', raw: input } };\n  }\n  const content = input.choices[0].message.content;\n  const parsed = JSON.parse(content);\n  \n  return {\n    json: {\n      label: parsed.label || 'unknown',\n      score: parsed.score || 0,\n      model: \"openai/gpt-3.5-turbo\"\n    }\n  };\n} catch (error) {\n  return {\n    json: {\n      label: \"error\",\n      score: 0,\n      error: error.message,\n      raw: $input.item.json\n    }\n  };\n}"
             },
             "name": "Parse Response",
             "type": "n8n-nodes-base.code",
