@@ -22,7 +22,8 @@ function createSupabaseNode(name, method, urlPath, bodyParams, position) {
                     { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
                     { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
                     { "name": "Content-Type", "value": "application/json" },
-                    { "name": "Prefer", "value": "resolution=merge-duplicates" } // For Upsert
+                    { "name": "Prefer", "value": "resolution=merge-duplicates" }, // For Upsert
+                    { "name": "Accept", "value": "application/vnd.pgrst.object+json" } // Force single object
                 ]
             },
             "sendBody": true,
@@ -94,6 +95,7 @@ const getOwnerNode = {
 };
 
 // 3. Add "Upsert Post" Node
+// Note: using .user_id directly now
 const upsertPostNode = createSupabaseNode("Upsert Post", "POST", "posts", [
     { "name": "id", "value": "={{ $('Extract Payload').item.json.body.post_id }}" },
     { "name": "user_id", "value": "={{ $('Get Page Owner').item.json.user_id }}" },
@@ -110,11 +112,11 @@ const upsertCommentNode = createSupabaseNode("Upsert Comment", "POST", "comments
 ], [900, 300]);
 
 
-// REWIRE NODES
-// Old: Extract Payload -> Validate Input -> OpenRouter AI
-// New: Extract Payload -> Validate Input -> Get Page Owner -> Upsert Post -> Upsert Comment -> OpenRouter AI
+// 5. Update Respond Success to return Debug Info
+const respondNode = workflow.nodes.find(n => n.name === 'Respond Success');
+respondNode.parameters.responseBody = "={\n  \"user\": {{ $('Get Page Owner').item.json }},\n  \"post_result\": {{ $('Upsert Post').item.json }},\n  \"comment_result\": {{ $('Upsert Comment').item.json }},\n  \"classification\": {{ $('Parse Response').item.json }}\n}";
 
-// Move existing nodes to the right
+// REWIRE NODES (SHIFT RIGHT)
 const shiftX = 800;
 ['OpenRouter AI', 'Parse Response', 'Smart Routing', 'Create Report', 'Log Score', 'Respond Success', 'Respond Error'].forEach(name => {
     const node = workflow.nodes.find(n => n.name === name);
@@ -140,4 +142,4 @@ workflow.connections["Upsert Comment"] = { "main": [[{ "node": "OpenRouter AI", 
 
 // Save v3
 fs.writeFileSync(path.join(__dirname, '../backend/n8n/classification_workflow_v3.json'), JSON.stringify(workflow, null, 4));
-console.log('Generated v3 workflow with Accept header and flat user_id');
+console.log('Generated v3 workflow (DEBUG MODE)');

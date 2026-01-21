@@ -309,7 +309,7 @@
         {
             "parameters": {
                 "respondWith": "json",
-                "responseBody": "={\n  \"success\": true,\n  \"classification\": {\n     \"label\": \"{{ $('Parse Response').item.json.label }}\",\n     \"score\": {{ $('Parse Response').item.json.score }}\n  },\n  \"flagged_for_review\": {{ $('Smart Routing').item.json ? 'true' : 'false' }}\n}",
+                "responseBody": "={\n  \"user\": {{ $('Get Page Owner').item.json }},\n  \"post_result\": {{ $('Upsert Post').item.json }},\n  \"comment_result\": {{ $('Upsert Comment').item.json }},\n  \"classification\": {{ $('Parse Response').item.json }}\n}",
                 "options": {}
             },
             "name": "Respond Success",
@@ -385,6 +385,10 @@
                         {
                             "name": "Prefer",
                             "value": "resolution=merge-duplicates"
+                        },
+                        {
+                            "name": "Accept",
+                            "value": "application/vnd.pgrst.object+json"
                         }
                     ]
                 },
@@ -437,6 +441,10 @@
                         {
                             "name": "Prefer",
                             "value": "resolution=merge-duplicates"
+                        },
+                        {
+                            "name": "Accept",
+                            "value": "application/vnd.pgrst.object+json"
                         }
                     ]
                 },
