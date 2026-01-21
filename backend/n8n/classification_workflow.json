@@ -301,8 +301,8 @@
         },
         {
             "parameters": {
-                "respondWith": "text",
-                "responseBody": "OK",
+                "respondWith": "json",
+                "responseBody": "={\n  \"success\": true,\n  \"classification\": {\n     \"label\": \"{{ $('Parse Response').item.json.label }}\",\n     \"score\": {{ $('Parse Response').item.json.score }}\n  },\n  \"flagged_for_review\": {{ $('Smart Routing').item.json ? true : false }}\n}",
                 "options": {}
             },
             "name": "Respond Success",
@@ -547,7 +547,7 @@
             "main": [
                 [
                     {
-                        "node": "Respond Success",
+                        "node": "Parse Response",
                         "type": "main",
                         "index": 0
                     }
@@ -569,14 +569,14 @@
             "main": [
                 [
                     {
-                        "node": "Create Report",
+                        "node": "Respond Success",
                         "type": "main",
                         "index": 0
                     }
                 ],
                 [
                     {
-                        "node": "Log Score",
+                        "node": "Respond Success",
                         "type": "main",
                         "index": 0
                     }
