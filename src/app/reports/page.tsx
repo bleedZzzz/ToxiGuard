@@ -10,9 +10,17 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Trash2, ShieldAlert } from "lucide-react"
+import { ShieldAlert, CheckCircle } from "lucide-react"
+import { ReportActions } from "@/components/ReportActions"
+import Link from "next/link"
 
-export default async function ReportsPage() {
+const PAGE_SIZE = 15
+
+export default async function ReportsPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ page?: string }>
+}) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -20,8 +28,13 @@ export default async function ReportsPage() {
         redirect('/login')
     }
 
-    // Fetch reports
-    const { data: reports } = await supabase
+    const params = await searchParams
+    const currentPage = Math.max(1, parseInt(params.page || '1', 10))
+    const from = (currentPage - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
+
+    // Fetch reports with pagination
+    const { data: reports, count } = await supabase
         .from('reports')
         .select(`
       *,
@@ -33,8 +46,11 @@ export default async function ReportsPage() {
             label
         )
       )
-    `)
+    `, { count: 'exact' })
         .order('created_at', { ascending: false })
+        .range(from, to)
+
+    const totalPages = Math.ceil((count || 0) / PAGE_SIZE)
 
     return (
         <div className="space-y-8 py-4 max-w-7xl mx-auto">
@@ -45,6 +61,11 @@ export default async function ReportsPage() {
                         Manage flagged comments and maintain community standards.
                     </p>
                 </div>
+                {count !== null && count > 0 && (
+                    <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full border">
+                        {count} total report{count !== 1 ? 's' : ''}
+                    </div>
+                )}
             </div>
 
             <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
@@ -73,7 +94,7 @@ export default async function ReportsPage() {
                                         {report.comments?.commenter_name}
                                     </TableCell>
                                     <TableCell className="max-w-[300px] truncate italic text-foreground/80">
-                                        "{report.comments?.content}"
+                                        &quot;{report.comments?.content}&quot;
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={isToxic ? "destructive" : "secondary"} className="h-6">
@@ -90,22 +111,13 @@ export default async function ReportsPage() {
                                             ) : (
                                                 <span className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full text-xs font-bold ring-1 ring-inset ring-emerald-500/20">
                                                     <CheckCircle className="h-3 w-3" />
-                                                    Resolved
+                                                    {report.status === 'dismissed' ? 'Dismissed' : 'Resolved'}
                                                 </span>
                                             )}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button variant="outline" size="sm" className="h-8 gap-1 hidden group-hover:flex">
-                                                <CheckCircle className="h-3.5 w-3.5" />
-                                                Dismiss
-                                            </Button>
-                                            <Button variant="destructive" size="sm" className="h-8 gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                                Delete
-                                            </Button>
-                                        </div>
+                                        <ReportActions reportId={report.id} />
                                     </TableCell>
                                 </TableRow>
                             )
@@ -120,6 +132,29 @@ export default async function ReportsPage() {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-4">
+                    {currentPage > 1 ? (
+                        <Link href={`/reports?page=${currentPage - 1}`}>
+                            <Button variant="outline" size="sm">← Previous</Button>
+                        </Link>
+                    ) : (
+                        <Button variant="outline" size="sm" disabled>← Previous</Button>
+                    )}
+                    <span className="text-sm text-muted-foreground px-4">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    {currentPage < totalPages ? (
+                        <Link href={`/reports?page=${currentPage + 1}`}>
+                            <Button variant="outline" size="sm">Next →</Button>
+                        </Link>
+                    ) : (
+                        <Button variant="outline" size="sm" disabled>Next →</Button>
+                    )}
+                </div>
+            )}
         </div>
     )
 }

@@ -4,14 +4,27 @@ import { CommentCard } from '@/components/CommentCard'
 import { AlertTriangle, MessageSquare, Shield } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import { ConnectFacebookButton } from '@/components/ConnectFacebookButton'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
-export default async function DashboardPage() {
+const PAGE_SIZE = 12
+
+export default async function DashboardPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ page?: string }>
+}) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
         redirect('/login')
     }
+
+    const params = await searchParams
+    const currentPage = Math.max(1, parseInt(params.page || '1', 10))
+    const from = (currentPage - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
 
     // Fetch user profile for threshold
     const { data: profile } = await supabase
@@ -31,8 +44,8 @@ export default async function DashboardPage() {
     const hasConnectedAccounts = socialAccounts && socialAccounts.length > 0
     const metaAppId = process.env.META_APP_ID as string
 
-    // Fetch recent comments
-    const { data: comments } = await supabase
+    // Fetch recent comments with pagination
+    const { data: comments, count: commentCount } = await supabase
         .from('comments')
         .select(`
       *,
@@ -43,14 +56,16 @@ export default async function DashboardPage() {
         score,
         label
       )
-    `)
+    `, { count: 'exact' })
         .order('created_at', { ascending: false })
-        .limit(20)
+        .range(from, to)
+
+    const totalPages = Math.ceil((commentCount || 0) / PAGE_SIZE)
 
     // Transform data to match CommentCard interface
     const formattedComments = comments?.map(c => ({
         ...c,
-        toxicity_score: c.toxicity_scores?.[0] // Assuming one score per comment for simplicity
+        toxicity_score: c.toxicity_scores?.[0]
     })) || []
 
     return (
@@ -105,7 +120,7 @@ export default async function DashboardPage() {
                 <div className="flex items-center justify-between">
                     <h3 className="text-2xl font-bold tracking-tight">Recent Activity Stream</h3>
                     <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full border">
-                        Auto-updates in real-time
+                        {commentCount || 0} total comments
                     </div>
                 </div>
 
@@ -128,6 +143,29 @@ export default async function DashboardPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 pt-4">
+                        {currentPage > 1 ? (
+                            <Link href={`/dashboard?page=${currentPage - 1}`}>
+                                <Button variant="outline" size="sm">← Previous</Button>
+                            </Link>
+                        ) : (
+                            <Button variant="outline" size="sm" disabled>← Previous</Button>
+                        )}
+                        <span className="text-sm text-muted-foreground px-4">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        {currentPage < totalPages ? (
+                            <Link href={`/dashboard?page=${currentPage + 1}`}>
+                                <Button variant="outline" size="sm">Next →</Button>
+                            </Link>
+                        ) : (
+                            <Button variant="outline" size="sm" disabled>Next →</Button>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     )

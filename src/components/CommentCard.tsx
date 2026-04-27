@@ -3,14 +3,14 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { ExternalLink, Flag, MoreVertical } from "lucide-react"
+import { ExternalLink, Flag } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
 interface Comment {
@@ -31,6 +31,11 @@ interface Comment {
 export function CommentCard({ comment }: { comment: Comment }) {
     const isToxic = (comment.toxicity_score?.score || 0) > 0.7
 
+    // Build a Facebook post URL from the post_id if it looks like a valid FB ID
+    const postUrl = comment.post_id && comment.post_id.includes('_')
+        ? `https://www.facebook.com/${comment.post_id}`
+        : null
+
     return (
         <Card className={`overflow-hidden transition-all hover:shadow-md ${isToxic ? "border-red-500/50 bg-red-500/5" : "hover:border-primary/50"}`}>
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
@@ -47,18 +52,22 @@ export function CommentCard({ comment }: { comment: Comment }) {
                         </span>
                     </div>
                 </div>
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                <ExternalLink className="h-4 w-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>View Post: {comment.posts?.content?.substring(0, 30)}...</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+                {postUrl && (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <a href={postUrl} target="_blank" rel="noopener noreferrer">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                        <ExternalLink className="h-4 w-4" />
+                                    </Button>
+                                </a>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>View Post: {comment.posts?.content?.substring(0, 30)}...</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
             </CardHeader>
             <CardContent className="pb-3">
                 <p className="text-sm leading-relaxed text-foreground/90">{comment.content}</p>

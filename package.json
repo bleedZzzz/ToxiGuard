@@ -7,9 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy:n8n": "npx ts-node scripts/sync-n8n.ts",
-    "start:n8n": "docker-compose up -d",
-    "tunnel": "npx cloudflared tunnel --url http://localhost:3000"
+    "seed": "npx ts-node scripts/seed_data.ts"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",
@@ -21,22 +19,24 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.86.0",
+    "@types/uuid": "^10.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.555.0",
     "next": "^16.1.3",
     "next-themes": "^0.4.6",
-    "node-fetch": "^2.7.0",
+
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.4.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20.19.30",
-    "@types/node-fetch": "^2.6.13",
+
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.2.3",

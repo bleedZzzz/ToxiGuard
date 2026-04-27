@@ -3,8 +3,8 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { ThresholdSlider } from '@/components/ThresholdSlider'
+import { DeleteAccountButton } from '@/components/DeleteAccountButton'
 
 export default async function SettingsPage() {
     const supabase = await createClient()
@@ -70,9 +70,7 @@ export default async function SettingsPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Button variant="destructive" size="lg" className="w-full sm:w-auto">
-                            Delete Account & All Data
-                        </Button>
+                        <DeleteAccountButton />
                     </CardContent>
                 </Card>
             </div>

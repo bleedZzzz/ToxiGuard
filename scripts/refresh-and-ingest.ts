@@ -9,7 +9,11 @@ dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const userAccessToken = process.env.META_USER_ACCESS_TOKEN!;
-const n8nWebhookUrl = process.env.N8N_BASE_URL ? `${process.env.N8N_BASE_URL.replace(/\/$/, '')}/webhook/classify-comment` : 'http://localhost:5678/webhook/classify-comment';
+
+// Post directly to our own Next.js webhook endpoint (no n8n)
+const webhookUrl = process.env.NEXT_PUBLIC_APP_URL
+    ? `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/api/webhook/facebook`
+    : 'http://localhost:3000/api/webhook/facebook';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -17,57 +21,58 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const FORCE_PAGE_ID = process.env.META_PAGE_ID || '1614940733203422';
 
 async function ingest() {
-    console.log('🚀 Starting Robust Ingestion...');
+    console.log('🚀 Starting Ingestion...');
+    console.log(`📡 Webhook Target: ${webhookUrl}`);
 
     let accountsToProcess = [];
 
     // 1. Try to fetch pages normally
-    console.log('📡 Fetching pages from /me/accounts...');
-    const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${userAccessToken}`);
-    const pagesData = await pagesRes.json() as any;
+    console.log('📡 Validating Token Type...');
+    const debugUrl = `https://graph.facebook.com/debug_token?input_token=${userAccessToken}&access_token=${process.env.META_APP_ID}|${process.env.META_APP_SECRET}`;
+    const debugRes = await fetch(debugUrl);
+    const debugData = await debugRes.json() as any;
 
-    if (pagesData.data && pagesData.data.length > 0) {
-        for (const page of pagesData.data) {
-            accountsToProcess.push({
-                id: page.id,
-                name: page.name,
-                token: page.access_token
-            });
-            // Update DB
-            await supabase.from('social_accounts').upsert({
-                page_id: page.id,
-                page_name: page.name,
-                access_token: page.access_token,
-                platform: 'facebook'
-            }, { onConflict: 'page_id' });
-        }
+    if (debugData.data?.type === 'PAGE') {
+        console.log('✅ Detected PAGE Token. Fetching page details...');
+        const pageRes = await fetch(`https://graph.facebook.com/v19.0/${FORCE_PAGE_ID}?fields=name&access_token=${userAccessToken}`);
+        const pageData = await pageRes.json() as any;
+
+        accountsToProcess.push({
+            id: FORCE_PAGE_ID,
+            name: pageData.name || 'Facebook Page',
+            token: userAccessToken
+        });
+        // Update DB
+        await supabase.from('social_accounts').upsert({
+            page_id: FORCE_PAGE_ID,
+            page_name: pageData.name || 'Facebook Page',
+            access_token: userAccessToken,
+            platform: 'facebook',
+            user_id: 'da554f2f-6c3f-49b7-83b5-b2aa1763464b'
+        }, { onConflict: 'page_id' });
     } else {
-        console.warn('⚠️ /me/accounts returned no pages. Trying to fetch token for specific Page ID...');
-        // Try to get token for our forced page ID directly
-        const pageTokenRes = await fetch(`https://graph.facebook.com/v19.0/${FORCE_PAGE_ID}?fields=access_token,name&access_token=${userAccessToken}`);
-        const pageTokenData = await pageTokenRes.json() as any;
+        console.log('📡 Fetching pages from /me/accounts...');
+        const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${userAccessToken}`);
+        const pagesData = await pagesRes.json() as any;
 
-        if (pageTokenData.access_token) {
-            console.log(`✅ Successfully retrieved token for ${pageTokenData.name} directly!`);
-            accountsToProcess.push({
-                id: FORCE_PAGE_ID,
-                name: pageTokenData.name,
-                token: pageTokenData.access_token
-            });
-            await supabase.from('social_accounts').upsert({
-                page_id: FORCE_PAGE_ID,
-                page_name: pageTokenData.name,
-                access_token: pageTokenData.access_token,
-                platform: 'facebook'
-            }, { onConflict: 'page_id' });
+        if (pagesData.data && pagesData.data.length > 0) {
+            for (const page of pagesData.data) {
+                accountsToProcess.push({
+                    id: page.id,
+                    name: page.name,
+                    token: page.access_token
+                });
+            }
         } else {
-            console.error('❌ Could not find any pages or get a token. Error:', pageTokenData.error?.message || 'Unknown error');
-            console.log('💡 TIP: When generating the token in Graph API Explorer, make sure to select your PAGE in the "User or Page" dropdown.');
+            console.error('❌ Could not find any pages. Error:', pagesData.error?.message || 'Unknown error');
             return;
         }
     }
 
     // 2. Process Ingestion
+    let totalProcessed = 0;
+    let totalErrors = 0;
+
     for (const account of accountsToProcess) {
         console.log(`\n📂 Ingesting from: ${account.name}`);
 
@@ -98,6 +103,8 @@ async function ingest() {
 
             for (const comment of comments) {
                 console.log(`      💬 Comment: ${comment.message}`);
+
+                // Build a Facebook webhook-compatible payload
                 const payload = {
                     object: 'page',
                     entry: [{
@@ -105,6 +112,7 @@ async function ingest() {
                         changes: [{
                             value: {
                                 item: 'comment',
+                                verb: 'add',
                                 message: comment.message,
                                 comment_id: comment.id,
                                 post_id: post.id,
@@ -117,17 +125,35 @@ async function ingest() {
                     }]
                 };
 
-                await fetch(n8nWebhookUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                console.log(`      ✅ Sent comment ${comment.id} to n8n`);
+                try {
+                    const res = await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const responseData = await res.json();
+                    console.log(`      📡 Status: ${res.status}`);
+
+                    if (res.ok) {
+                        totalProcessed++;
+                        console.log(`      ✅ Processed:`, JSON.stringify(responseData));
+                    } else {
+                        totalErrors++;
+                        console.error(`      ❌ Error:`, JSON.stringify(responseData));
+                    }
+                } catch (err: any) {
+                    totalErrors++;
+                    console.error(`      ❌ Request failed: ${err.message}`);
+                }
             }
         }
     }
 
-    console.log('\n✨ Ingestion Complete.');
+    console.log(`\n✨ Ingestion Complete. Processed: ${totalProcessed}, Errors: ${totalErrors}`);
 }
 
 ingest();

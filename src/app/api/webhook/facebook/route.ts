@@ -8,7 +8,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const VERIFY_TOKEN = 'toxiguard-verification-v1';
+const VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN || 'toxiguard-verification-v1';
 
 // 1. GET: Webhook Verification
 export async function GET(req: NextRequest) {
@@ -21,7 +21,6 @@ export async function GET(req: NextRequest) {
 
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
         console.log('✅ Webhook Verified Successfully');
-        // Must return ONLY the challenge string as plain text
         return new Response(challenge, {
             status: 200,
             headers: { 'Content-Type': 'text/plain' },
@@ -39,6 +38,8 @@ export async function POST(req: NextRequest) {
         console.log('📨 Webhook Body:', JSON.stringify(body, null, 2));
 
         if (body.object === 'page') {
+            const results = [];
+
             for (const entry of body.entry || []) {
                 console.log('➡️ Processing Entry:', entry.id);
                 for (const change of entry.changes || []) {
@@ -46,13 +47,20 @@ export async function POST(req: NextRequest) {
                     console.log('➡️ Processing Change:', value.item, value.verb);
 
                     if (value.item === 'comment' && value.verb === 'add') {
-                        await handleNewComment(value, entry.id);
+                        try {
+                            const result = await handleNewComment(value, entry.id);
+                            results.push({ comment_id: value.comment_id, status: 'processed', ...result });
+                        } catch (error: any) {
+                            console.error('❌ Error processing comment:', value.comment_id, error.message);
+                            results.push({ comment_id: value.comment_id, status: 'error', error: error.message });
+                        }
                     } else {
                         console.log('⚠️ Ignoring change (not a new comment):', value.item, value.verb);
                     }
                 }
             }
-            return NextResponse.json({ success: true }, { status: 200 });
+
+            return NextResponse.json({ success: true, processed: results.length, results }, { status: 200 });
         }
 
         console.log('⚠️ Webhook not a page object:', body.object);
@@ -65,7 +73,6 @@ export async function POST(req: NextRequest) {
 
 async function handleNewComment(data: any, pageId: string) {
     const { from, message, post_id, comment_id } = data;
-    const commenterId = from.id;
     const commenterName = from.name;
 
     console.log(`Processing comment from ${commenterName}: ${message}`);
@@ -78,17 +85,20 @@ async function handleNewComment(data: any, pageId: string) {
         .single();
 
     if (!accounts) {
-        console.error(`❌ Page ID ${pageId} not linked to any user.`);
-        return;
+        throw new Error(`Page ID ${pageId} not linked to any user.`);
     }
     const userId = accounts.user_id;
 
-    // 2. Upsert Post (Placeholder)
-    await supabase.from('posts').upsert({
+    // 2. Upsert Post
+    const { error: postError } = await supabase.from('posts').upsert({
         id: post_id,
         user_id: userId,
-        content: 'Facebook Post (Placeholder)'
+        content: `Facebook Post`,
     });
+
+    if (postError) {
+        console.error('⚠️ Post upsert warning:', postError.message);
+    }
 
     // 3. Upsert Comment
     const { error: commentError } = await supabase.from('comments').upsert({
@@ -97,16 +107,16 @@ async function handleNewComment(data: any, pageId: string) {
         user_id: userId,
         content: message,
         commenter_name: commenterName,
-        commented_at: new Date().toISOString() // Approximate
+        commented_at: new Date().toISOString()
     });
 
     if (commentError) {
-        console.error('❌ Failed to save comment:', commentError);
-        return;
+        throw new Error(`Failed to save comment: ${commentError.message}`);
     }
 
     // 4. AI Classification
-    await classifyComment(comment_id, message, userId);
+    const classification = await classifyComment(comment_id, message, userId);
+    return classification;
 }
 
 async function classifyComment(commentId: string, text: string, userId: string) {
@@ -121,23 +131,38 @@ async function classifyComment(commentId: string, text: string, userId: string) 
             body: JSON.stringify({
                 model: 'openai/gpt-3.5-turbo',
                 messages: [
-                    { "role": "system", "content": "You are a content moderation AI. Return ONLY a JSON object: { 'label': 'safe' | 'hate_speech' | 'harassment' | 'sexual' | 'violence' | 'spam', 'score': 0.0-1.0 }. Score 0.0 is safe, 1.0 is severe." },
-                    { "role": "user", "content": text }
+                    {
+                        role: 'system',
+                        content: `You are a content moderation AI. Analyze the following comment and return ONLY a JSON object with exactly these fields:
+- "label": one of "safe", "hate_speech", "harassment", "sexual", "violence", "spam"
+- "score": a float from 0.0 (completely safe) to 1.0 (severely toxic)
+Return ONLY valid JSON, no other text.`
+                    },
+                    { role: 'user', content: text }
                 ],
-                response_format: { type: "json_object" }
+                response_format: { type: 'json_object' }
             })
         });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`OpenRouter API error: ${response.status} ${errorText}`);
+        }
 
         const aiData = await response.json();
         const content = JSON.parse(aiData.choices[0].message.content);
 
         // 5. Save Score
-        await supabase.from('toxicity_scores').insert({
+        const { error: scoreError } = await supabase.from('toxicity_scores').insert({
             comment_id: commentId,
             score: content.score,
             label: content.label,
             model: 'openai/gpt-3.5-turbo'
         });
+
+        if (scoreError) {
+            console.error('⚠️ Score insert warning:', scoreError.message);
+        }
 
         // 6. Fetch threshold from profile
         const { data: profile } = await supabase
@@ -150,17 +175,23 @@ async function classifyComment(commentId: string, text: string, userId: string) 
 
         // 7. Create Report if toxic based on custom threshold
         if (content.score >= threshold) {
-            await supabase.from('reports').insert({
+            const { error: reportError } = await supabase.from('reports').insert({
                 comment_id: commentId,
                 user_id: userId,
-                reason: `AI Flagged: ${content.label} (${content.score})`,
+                reason: `AI Flagged: ${content.label} (${(content.score * 100).toFixed(0)}%)`,
                 status: 'pending'
             });
+
+            if (reportError) {
+                console.error('⚠️ Report insert warning:', reportError.message);
+            }
         }
 
         console.log('✅ Comment Classified & Saved:', content);
+        return { label: content.label, score: content.score, flagged: content.score >= threshold };
 
-    } catch (error) {
-        console.error('❌ AI Classification Failed:', error);
+    } catch (error: any) {
+        console.error('❌ AI Classification Failed:', error.message);
+        return { label: 'error', score: 0, flagged: false, error: error.message };
     }
 }

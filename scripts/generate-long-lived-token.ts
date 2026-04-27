@@ -8,7 +8,7 @@ dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.
 const appId = process.env.META_APP_ID;
 const appSecret = process.env.META_APP_SECRET;
 const shortToken = process.env.META_USER_ACCESS_TOKEN;
-const pageId = '976828372182708'; // Your ToxiGuard Test Page ID
+const pageId = process.env.META_PAGE_ID || '1614940733203422';
 
 async function generatePermanentToken() {
     console.log('🚀 Starting Token Exchange Process...');
@@ -34,17 +34,25 @@ async function generatePermanentToken() {
         console.log('✅ Success! 60-day token generated.');
 
         // 2. Refresh the Page Token using the long-lived user token
-        console.log('📡 Step 2/2: Converting to a Permanent Page Token...');
-        const pageUrl = `https://graph.facebook.com/v19.0/${pageId}?fields=access_token&access_token=${longLivedToken}`;
-        const pageRes = await fetch(pageUrl);
-        const pageData = await pageRes.json() as any;
+        console.log('📡 Step 2/2: Fetching Page Tokens from /me/accounts...');
+        const accountsUrl = `https://graph.facebook.com/v19.0/me/accounts?access_token=${longLivedToken}`;
+        const accountsRes = await fetch(accountsUrl);
+        const accountsData = await accountsRes.json() as any;
 
-        if (pageData.error) {
-            console.error('❌ Failed to get Page token:', pageData.error.message);
+        if (accountsData.error) {
+            console.error('❌ Failed to get accounts:', accountsData.error.message);
             return;
         }
 
-        const permanentPageToken = pageData.access_token;
+        const page = accountsData.data?.find((p: any) => p.id === pageId);
+
+        if (!page) {
+            console.error(`❌ Could not find Page with ID ${pageId} in your account.`);
+            console.log('Available Pages:', accountsData.data?.map((p: any) => `${p.name} (${p.id})`).join(', '));
+            return;
+        }
+
+        const permanentPageToken = page.access_token;
         console.log('\n🌟 CONGRATULATIONS! Permanent Page Token generated successfully.');
         const fs = await import('fs');
         fs.writeFileSync('permanent_token.txt', permanentPageToken);
@@ -53,8 +61,9 @@ async function generatePermanentToken() {
         console.log('----------------------------------------------------');
         console.log('\n👉 ACTION REQUIRED:');
         console.log('1. Copy the token above.');
-        console.log('2. Replace META_USER_ACCESS_TOKEN in your .env with this new token.');
-        console.log('3. Run "npx ts-node scripts/refresh-and-ingest.ts" to finish!');
+        console.log('5. Copy the token and paste it into your .env as META_USER_ACCESS_TOKEN');
+        console.log('6. Run: npx ts-node scripts/generate-long-lived-token.ts (This makes it PERMANENT)');
+        console.log('\nFinal Step: npx ts-node scripts/refresh-and-ingest.ts');
 
     } catch (err: any) {
         console.error('❌ Unexpected Error:', err.message);

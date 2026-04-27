@@ -1,62 +1,235 @@
 import Link from 'next/link'
 import { TubesCursorAnimation } from '@/components/TubesCursorAnimation'
 import { Button } from '@/components/ui/button'
-import { ShieldCheck, Zap, BarChart3 } from 'lucide-react'
+import { ShieldCheck, Zap, BarChart3, Eye, ArrowRight, ChevronRight, Shield, Bell } from 'lucide-react'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+    title: 'ToxiGuard — AI-Powered Toxicity Protection for Social Media',
+    description: 'Automatically detect and flag toxic comments on your Instagram and Facebook posts using advanced AI classification. Real-time monitoring, smart filtering, and insightful analytics.',
+}
 
 export default function LandingPage() {
-  return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)]">
-      <TubesCursorAnimation />
-      <section className="flex-1 flex flex-col items-center justify-center space-y-10 py-24 text-center md:py-32">
-        <div className="space-y-4 max-w-3xl">
-          <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-            Automated Toxicity Protection for Social Media
-          </h1>
-          <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-            ToxiGuard automatically detects and flags toxic comments on your Instagram and Facebook posts using advanced AI.
-          </p>
-        </div>
-        <div className="flex gap-4">
-          <Link href="/login">
-            <Button size="lg">Get Started</Button>
-          </Link>
-          <Link href="#features">
-            <Button variant="outline" size="lg">Learn More</Button>
-          </Link>
-        </div>
-      </section>
+    return (
+        <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+            <TubesCursorAnimation />
 
-      <section id="features" className="container py-12 md:py-24 lg:py-32 bg-muted/50 rounded-3xl">
-        <div className="grid gap-8 md:grid-cols-3">
-          <div className="flex flex-col items-center space-y-4 text-center">
-            <div className="p-4 bg-primary/10 rounded-full">
-              <Zap className="h-6 w-6 text-primary" />
-            </div>
-            <h3 className="text-xl font-bold">Real-time Detection</h3>
-            <p className="text-muted-foreground">
-              Comments are analyzed instantly as they are posted using powerful AI models.
-            </p>
-          </div>
-          <div className="flex flex-col items-center space-y-4 text-center">
-            <div className="p-4 bg-primary/10 rounded-full">
-              <ShieldCheck className="h-6 w-6 text-primary" />
-            </div>
-            <h3 className="text-xl font-bold">Smart Filtering</h3>
-            <p className="text-muted-foreground">
-              Automatically flag hate speech, harassment, and spam with high accuracy.
-            </p>
-          </div>
-          <div className="flex flex-col items-center space-y-4 text-center">
-            <div className="p-4 bg-primary/10 rounded-full">
-              <BarChart3 className="h-6 w-6 text-primary" />
-            </div>
-            <h3 className="text-xl font-bold">Insightful Analytics</h3>
-            <p className="text-muted-foreground">
-              Track toxicity trends over time and manage your community health.
-            </p>
-          </div>
+            {/* Hero */}
+            <section className="flex-1 flex flex-col items-center justify-center space-y-12 py-24 text-center md:py-32 relative">
+                {/* Subtle badge */}
+                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-sm text-muted-foreground animate-in fade-in slide-in-from-bottom-3 duration-700">
+                    <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    Protecting communities in real-time
+                </div>
+
+                <div className="space-y-6 max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+                    <h1 className="text-5xl font-extrabold tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl bg-clip-text text-transparent bg-gradient-to-b from-foreground via-foreground to-foreground/40">
+                        Automated Toxicity
+                        <br />
+                        <span className="bg-gradient-to-r from-blue-500 via-violet-500 to-fuchsia-500 bg-clip-text text-transparent">
+                            Protection
+                        </span>
+                    </h1>
+                    <p className="mx-auto max-w-[700px] text-muted-foreground text-lg md:text-xl leading-relaxed">
+                        ToxiGuard uses advanced AI to detect hate speech, harassment, and spam
+                        on your social media pages — <span className="text-foreground font-medium">before it damages your community.</span>
+                    </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-300">
+                    <Link href="/login">
+                        <Button size="lg" className="px-8 text-base gap-2 group">
+                            Get Started Free
+                            <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                        </Button>
+                    </Link>
+                    <Link href="#how-it-works">
+                        <Button variant="outline" size="lg" className="px-8 text-base">
+                            How It Works
+                        </Button>
+                    </Link>
+                </div>
+
+                {/* Trust indicators */}
+                <div className="flex items-center gap-8 text-sm text-muted-foreground animate-in fade-in duration-700 delay-500">
+                    <div className="flex items-center gap-1.5">
+                        <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                        AI-Powered
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <Zap className="h-4 w-4 text-amber-500" />
+                        Real-time
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <Eye className="h-4 w-4 text-blue-500" />
+                        Always Watching
+                    </div>
+                </div>
+            </section>
+
+            {/* Features Grid */}
+            <section id="features" className="container py-16 md:py-28">
+                <div className="text-center space-y-4 mb-16">
+                    <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                        Everything you need to protect your community
+                    </h2>
+                    <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                        ToxiGuard combines AI classification with real-time monitoring to keep your social media safe.
+                    </p>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <FeatureCard
+                        icon={<Zap className="h-6 w-6" />}
+                        title="Real-time Detection"
+                        description="Comments are analyzed the instant they're posted. No delays, no batch processing — immediate protection."
+                        gradient="from-amber-500/20 to-orange-500/20"
+                        iconColor="text-amber-500"
+                    />
+                    <FeatureCard
+                        icon={<ShieldCheck className="h-6 w-6" />}
+                        title="Smart Classification"
+                        description="Powered by GPT, ToxiGuard categorizes threats as hate speech, harassment, violence, spam, or safe — with confidence scores."
+                        gradient="from-blue-500/20 to-cyan-500/20"
+                        iconColor="text-blue-500"
+                    />
+                    <FeatureCard
+                        icon={<BarChart3 className="h-6 w-6" />}
+                        title="Insightful Analytics"
+                        description="Track toxicity trends, community health metrics, and protection effectiveness over time."
+                        gradient="from-violet-500/20 to-purple-500/20"
+                        iconColor="text-violet-500"
+                    />
+                    <FeatureCard
+                        icon={<Bell className="h-6 w-6" />}
+                        title="Auto-Flagging"
+                        description="Toxic comments above your custom threshold are automatically flagged for review — you set the sensitivity."
+                        gradient="from-rose-500/20 to-pink-500/20"
+                        iconColor="text-rose-500"
+                    />
+                    <FeatureCard
+                        icon={<Eye className="h-6 w-6" />}
+                        title="Multi-Page Monitoring"
+                        description="Connect multiple Facebook pages and monitor them all from a single, unified dashboard."
+                        gradient="from-emerald-500/20 to-teal-500/20"
+                        iconColor="text-emerald-500"
+                    />
+                    <FeatureCard
+                        icon={<Shield className="h-6 w-6" />}
+                        title="Vigilance Reports"
+                        description="Detailed reports on every flagged comment with one-click dismiss or escalation actions."
+                        gradient="from-indigo-500/20 to-blue-500/20"
+                        iconColor="text-indigo-500"
+                    />
+                </div>
+            </section>
+
+            {/* How It Works */}
+            <section id="how-it-works" className="container py-16 md:py-28 border-t border-border/50">
+                <div className="text-center space-y-4 mb-16">
+                    <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                        Three steps to a safer community
+                    </h2>
+                    <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                        Set up ToxiGuard in minutes and let AI handle the rest.
+                    </p>
+                </div>
+
+                <div className="grid gap-8 md:grid-cols-3 max-w-4xl mx-auto">
+                    <StepCard
+                        step="01"
+                        title="Connect Your Pages"
+                        description="Link your Facebook/Instagram pages with a single click. We only need read access to comments."
+                    />
+                    <StepCard
+                        step="02"
+                        title="AI Analyzes Comments"
+                        description="Every new comment is instantly classified by our AI — hate speech, harassment, spam, and more."
+                    />
+                    <StepCard
+                        step="03"
+                        title="Review & Act"
+                        description="Toxic comments are flagged in your dashboard. Dismiss, escalate, or adjust your sensitivity threshold."
+                    />
+                </div>
+            </section>
+
+            {/* CTA */}
+            <section className="container py-16 md:py-24">
+                <div className="rounded-3xl bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border border-primary/10 p-12 md:p-20 text-center space-y-8">
+                    <h2 className="text-3xl md:text-5xl font-bold tracking-tight">
+                        Ready to protect your community?
+                    </h2>
+                    <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+                        Start monitoring your social media for toxic content today. Setup takes less than 2 minutes.
+                    </p>
+                    <Link href="/login">
+                        <Button size="lg" className="px-10 text-base gap-2 group">
+                            Get Started
+                            <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                        </Button>
+                    </Link>
+                </div>
+            </section>
+
+            {/* Footer */}
+            <footer className="border-t py-8">
+                <div className="container flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                        <span className="font-semibold text-foreground">ToxiGuard</span>
+                        <span>© {new Date().getFullYear()}</span>
+                    </div>
+                    <p>AI-Powered Toxicity Protection for Social Media</p>
+                </div>
+            </footer>
         </div>
-      </section>
-    </div>
-  )
+    )
+}
+
+function FeatureCard({
+    icon,
+    title,
+    description,
+    gradient,
+    iconColor,
+}: {
+    icon: React.ReactNode
+    title: string
+    description: string
+    gradient: string
+    iconColor: string
+}) {
+    return (
+        <div className="group relative rounded-2xl border bg-card p-8 space-y-4 transition-all hover:shadow-lg hover:border-primary/20 hover:-translate-y-1 duration-300">
+            <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${gradient}`}>
+                <div className={iconColor}>{icon}</div>
+            </div>
+            <h3 className="text-xl font-bold">{title}</h3>
+            <p className="text-muted-foreground leading-relaxed">{description}</p>
+        </div>
+    )
+}
+
+function StepCard({
+    step,
+    title,
+    description,
+}: {
+    step: string
+    title: string
+    description: string
+}) {
+    return (
+        <div className="text-center space-y-4">
+            <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 text-primary text-xl font-bold mx-auto">
+                {step}
+            </div>
+            <h3 className="text-lg font-bold">{title}</h3>
+            <p className="text-muted-foreground leading-relaxed">{description}</p>
+        </div>
+    )
 }
