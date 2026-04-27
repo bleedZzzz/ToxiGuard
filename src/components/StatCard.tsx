@@ -1,34 +1,55 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { LucideIcon } from "lucide-react"
+import { ReactNode } from 'react'
+import { MagicCard } from './ui/magic-card'
+import { BorderBeam } from './ui/border-beam'
 
 interface StatCardProps {
     title: string
     value: string | number
-    description?: string
-    icon: LucideIcon
+    description: string
+    icon: React.ElementType
+    trend?: 'up' | 'down' | 'neutral'
+    trendValue?: string
+    showBeam?: boolean
 }
 
-export function StatCard({ title, value, description, icon: Icon }: StatCardProps) {
+export function StatCard({
+    title,
+    value,
+    description,
+    icon: Icon,
+    trend,
+    trendValue,
+    showBeam = false
+}: StatCardProps) {
     return (
-        <Card className="relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/20 group">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium tracking-tight text-muted-foreground group-hover:text-foreground transition-colors">
+        <MagicCard className="p-6 relative overflow-hidden" gradientColor="rgba(255,255,255,0.05)">
+            {showBeam && <BorderBeam duration={8} size={150} colorFrom="#06ffa5" colorTo="#00d9ff" />}
+            <div className="flex items-center justify-between space-y-0 pb-2">
+                <h3 className="tracking-tight text-sm font-medium text-muted-foreground">
                     {title}
-                </CardTitle>
-                <div className="p-2 bg-primary/5 rounded-lg group-hover:bg-primary/10 transition-colors">
+                </h3>
+                <div className="p-2 bg-primary/10 rounded-xl">
                     <Icon className="h-4 w-4 text-primary" />
                 </div>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <div className="flex flex-col gap-1 mt-2">
                 <div className="text-3xl font-bold tracking-tighter">{value}</div>
-                {description && (
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                        <span className="w-1 h-1 rounded-full bg-primary/40 inline-block" />
-                        {description}
-                    </p>
-                )}
-            </CardContent>
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-        </Card>
+                <div className="flex items-center text-xs text-muted-foreground">
+                    {trend && (
+                        <span
+                            className={`mr-1 font-medium ${trend === 'up'
+                                ? 'text-emerald-500'
+                                : trend === 'down'
+                                    ? 'text-rose-500'
+                                    : 'text-amber-500'
+                                }`}
+                        >
+                            {trendValue}
+                        </span>
+                    )}
+                    {description}
+                </div>
+            </div>
+        </MagicCard>
     )
 }

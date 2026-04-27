@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { ConnectFacebookButton } from '@/components/ConnectFacebookButton'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { BlurFade } from '@/components/ui/blur-fade'
 
 const PAGE_SIZE = 12
 
@@ -96,40 +97,51 @@ export default async function DashboardPage({
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
-                <StatCard
-                    title="Total Ingested"
-                    value={totalComments || 0}
-                    icon={MessageSquare}
-                    description="Total comments processed"
-                />
-                <StatCard
-                    title="Threats Neutralized"
-                    value={toxicComments || 0}
-                    description={`Detected with >${((profile?.threshold ?? 0.7) * 100).toFixed(0)}% confidence`}
-                    icon={AlertTriangle}
-                />
-                <StatCard
-                    title="Community Health"
-                    value={totalComments ? `${(((totalComments - (toxicComments || 0)) / totalComments) * 100).toFixed(1)}%` : "100%"}
-                    description="Safe comment ratio"
-                    icon={Shield}
-                />
+                <BlurFade delay={0.1}>
+                    <StatCard
+                        title="Total Ingested"
+                        value={totalComments || 0}
+                        icon={MessageSquare}
+                        description="Total comments processed"
+                    />
+                </BlurFade>
+                <BlurFade delay={0.2}>
+                    <StatCard
+                        title="Threats Neutralized"
+                        value={toxicComments || 0}
+                        description={`Detected with >${((profile?.threshold ?? 0.7) * 100).toFixed(0)}% confidence`}
+                        icon={AlertTriangle}
+                        showBeam
+                    />
+                </BlurFade>
+                <BlurFade delay={0.3}>
+                    <StatCard
+                        title="Community Health"
+                        value={totalComments ? `${(((totalComments - (toxicComments || 0)) / totalComments) * 100).toFixed(1)}%` : "100%"}
+                        description="Safe comment ratio"
+                        icon={Shield}
+                    />
+                </BlurFade>
             </div>
 
             <div className="space-y-6 pt-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-2xl font-bold tracking-tight">Recent Activity Stream</h3>
-                    <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full border">
-                        {commentCount || 0} total comments
+                <BlurFade delay={0.4}>
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-2xl font-bold tracking-tight">Recent Activity Stream</h3>
+                        <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full border">
+                            {commentCount || 0} total comments
+                        </div>
                     </div>
-                </div>
+                </BlurFade>
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {formattedComments.map((comment) => (
-                        <CommentCard key={comment.id} comment={comment} />
+                    {formattedComments.map((comment, i) => (
+                        <BlurFade key={comment.id} delay={0.4 + i * 0.05}>
+                            <CommentCard comment={comment} />
+                        </BlurFade>
                     ))}
                     {formattedComments.length === 0 && (
-                        <div className="col-span-full border-2 border-dashed rounded-3xl py-24 flex flex-col items-center justify-center text-center space-y-4 bg-muted/5">
+                        <BlurFade delay={0.5} className="col-span-full border-2 border-dashed rounded-3xl py-24 flex flex-col items-center justify-center text-center space-y-4 bg-muted/5">
                             <div className="p-4 bg-muted rounded-full">
                                 <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
                             </div>
@@ -140,7 +152,7 @@ export default async function DashboardPage({
                                     New comments will appear here instantly.
                                 </p>
                             </div>
-                        </div>
+                        </BlurFade>
                     )}
                 </div>
 

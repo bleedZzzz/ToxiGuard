@@ -28,6 +28,8 @@ interface Comment {
     }
 }
 
+import { MagicCard } from "./ui/magic-card"
+
 export function CommentCard({ comment }: { comment: Comment }) {
     const isToxic = (comment.toxicity_score?.score || 0) > 0.7
 
@@ -37,7 +39,10 @@ export function CommentCard({ comment }: { comment: Comment }) {
         : null
 
     return (
-        <Card className={`overflow-hidden transition-all hover:shadow-md ${isToxic ? "border-red-500/50 bg-red-500/5" : "hover:border-primary/50"}`}>
+        <MagicCard 
+            className={`flex flex-col overflow-hidden transition-all duration-300 ${isToxic ? "border-red-500/50 bg-red-500/5 shadow-[0_0_15px_rgba(239,68,68,0.1)]" : "hover:shadow-md border-border/50 bg-card/50 backdrop-blur-sm"}`}
+            gradientColor={isToxic ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.05)"}
+        >
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
                 <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9 border">
@@ -94,6 +99,6 @@ export function CommentCard({ comment }: { comment: Comment }) {
                     </Button>
                 </div>
             </CardFooter>
-        </Card>
+        </MagicCard>
     )
 }
