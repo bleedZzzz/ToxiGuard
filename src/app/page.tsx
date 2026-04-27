@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { TubesCursorAnimation } from '@/components/TubesCursorAnimation'
 import { Button } from '@/components/ui/button'
 import { ShieldCheck, Zap, BarChart3, Eye, ArrowRight, ChevronRight, Shield, Bell } from 'lucide-react'
 import type { Metadata } from 'next'
@@ -12,7 +11,16 @@ export const metadata: Metadata = {
 export default function LandingPage() {
     return (
         <div className="flex flex-col min-h-[calc(100vh-4rem)]">
-            <TubesCursorAnimation />
+            {/* Lightweight animated gradient background */}
+            <div className="fixed inset-0 -z-10 overflow-hidden">
+                <div className="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] animate-[spin_60s_linear_infinite] opacity-[0.03]"
+                    style={{
+                        background: 'conic-gradient(from 0deg, #00d9ff, #7b2cbf, #ff006e, #06ffa5, #00d9ff)',
+                    }}
+                />
+                <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-blue-500/5 blur-[120px]" />
+                <div className="absolute bottom-1/4 left-1/3 w-[400px] h-[400px] rounded-full bg-violet-500/5 blur-[100px]" />
+            </div>
 
             {/* Hero */}
             <section className="flex-1 flex flex-col items-center justify-center space-y-12 py-24 text-center md:py-32 relative">
